@@ -153,7 +153,7 @@
             margin-top: 20px;
         }
         
-        /* --- ATUALIZADO: Botões de 'Copiar' em verde --- */
+        /* --- Botões de 'Copiar' em verde --- */
         #btn-gerar-lista-times,
         #btn-gerar-lista-partidas,
         #btn-copiar-resultados { 
@@ -163,6 +163,14 @@
         #btn-gerar-lista-partidas:hover,
         #btn-copiar-resultados:hover { 
              background: #218838;
+        }
+        
+        /* --- Botão de 'Limpar' em vermelho --- */
+        #btn-limpar-resultados {
+            background: #dc3545; /* Vermelho 'perigo' */
+        }
+        #btn-limpar-resultados:hover {
+            background: #c82333;
         }
 
         button:hover {
@@ -503,10 +511,15 @@
                 <textarea id="results-output" rows="15" readonly></textarea>
                 
                 <button id="btn-copiar-resultados">📋 Copiar Resultados Salvos</button>
+                <button id="btn-baixar-resumo">💾 Baixar Resumo do Dia (PDF)</button>
+                
+                <button id="btn-limpar-resultados">❌ Limpar Histórico Salvo</button>
             </section>
 
         </main>
     </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -553,8 +566,12 @@
             const btnGerarListaPartidas = document.getElementById('btn-gerar-lista-partidas');
             const partidasListOutput = document.getElementById('partidas-list-output');
             
-            // Elemento para Copiar Resultados
             const btnCopiarResultados = document.getElementById('btn-copiar-resultados');
+            
+            const btnLimparResultados = document.getElementById('btn-limpar-resultados');
+            
+            // Elemento para Baixar Resumo
+            const btnBaixarResumo = document.getElementById('btn-baixar-resumo');
 
 
             // --- Lista de Cores para Times (Tons mais suaves) ---
@@ -573,7 +590,42 @@
             // O objeto 'times' agora também armazena as cores
             let times = []; // { nome, jogadores, tipo, colorName, colorHex }
             let partidas = []; 
-            let resultadosFinais = [];
+            let resultadosFinais = []; // Agora é carregado do LocalStorage
+
+            
+            // --- LÓGICA DE PERSISTÊNCIA (LOCALSTORAGE) ---
+            
+            const STORAGE_KEY = 'gerenciadorPartidasResultados';
+
+            // 1. Função para Carregar os dados salvos
+            function loadResultsFromLocalStorage() {
+                const dadosSalvos = localStorage.getItem(STORAGE_KEY);
+                if (dadosSalvos) {
+                    resultadosFinais = JSON.parse(dadosSalvos);
+                    resultsOutput.value = resultadosFinais.join('\n');
+                }
+            }
+            
+            // 2. Função para Salvar os dados
+            function saveResultsToLocalStorage() {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(resultadosFinais));
+            }
+
+            // 3. Função para Limpar os dados
+            btnLimparResultados.addEventListener('click', () => {
+                if (confirm('Tem certeza que deseja apagar permanentemente todo o histórico de resultados salvos?')) {
+                    resultadosFinais = [];
+                    resultsOutput.value = '';
+                    localStorage.removeItem(STORAGE_KEY);
+                    alert('Histórico de resultados limpo.');
+                }
+            });
+
+            // 4. Carrega os dados assim que a página é aberta
+            loadResultsFromLocalStorage();
+            
+            // --- FIM DA LÓGICA DE PERSISTÊNCIA ---
+
 
             // --- 1. Sorteio de Jogadores ---
             btnSortear.addEventListener('click', () => {
@@ -788,7 +840,9 @@
                     const timeA = times.find(t => t.nome === timeAName);
                     const timeB = times.find(t => t.nome === timeBName);
                     
-                    outputText += `Jogo ${index + 1}: ${timeA.nome} (${timeA.colorName}) vs ${timeB.nome} (${timeB.colorName})\n`;
+                    if(timeA && timeB) {
+                         outputText += `Jogo ${index + 1}: ${timeA.nome} (${timeA.colorName}) vs ${timeB.nome} (${timeB.colorName})\n`;
+                    }
                 });
                 
                 partidasListOutput.value = outputText;
@@ -877,6 +931,9 @@
                 resultadosFinais.push(resultadoTexto);
                 resultsOutput.value = resultadosFinais.join('\n');
                 
+                // --- Salva no LocalStorage ---
+                saveResultsToLocalStorage();
+                
                 alert('Resultado salvo!');
                 
                 // Remove a partida do seletor para não ser jogada novamente
@@ -923,11 +980,147 @@
                 // Tenta copiar automaticamente
                 copyTextToClipboard(textToCopy, resultsOutput);
             });
+            
+            // --- ATUALIZADO: Função para o Botão "Baixar Resumo do Dia" (PDF) ---
+            btnBaixarResumo.addEventListener('click', () => {
+                
+                // 0. Verifica se a biblioteca jsPDF foi carregada
+                if (typeof window.jspdf === 'undefined') {
+                    alert('Erro: A biblioteca de PDF (jsPDF) não foi carregada. Verifique sua conexão com a internet e tente novamente.');
+                    return;
+                }
+                
+                // 1. Verifica se há dados
+                if (times.length === 0 && resultadosFinais.length === 0) {
+                    alert('Não há dados para baixar! Sorteie os times ou jogue uma partida primeiro.');
+                    return;
+                }
+                
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Posição Y (vertical) inicial, com margem de 15mm do topo
+                let y = 15;
+                const margin = 10;
+                const pageHeight = doc.internal.pageSize.height;
+
+                // Função interna para checar e adicionar nova página
+                function checkPageBreak(yNeeded = 10) {
+                    if (y + yNeeded > pageHeight - margin) {
+                        doc.addPage();
+                        y = 15; // Reseta a posição Y para a nova página
+                    }
+                }
+
+                // --- Monta o conteúdo do PDF ---
+                
+                const today = new Date();
+                const dateString = today.toLocaleDateString('pt-BR');
+                const timeString = today.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0'); // Meses são 0-based
+                const dd = String(today.getDate()).padStart(2, '0');
+                const filename = `Resumo_Jogo_${yyyy}-${mm}-${dd}.pdf`;
+
+                // Título
+                doc.setFontSize(22);
+                doc.text("Resumo do Jogo", margin, y);
+                y += 10;
+                doc.setFontSize(10);
+                doc.setTextColor(100); // Cinza
+                doc.text(`Gerado em: ${dateString} às ${timeString}`, margin, y);
+                y += 15; // Espaço maior
+                
+                doc.setTextColor(0); // Preto
+
+                // --- Seção 1: Times Sorteados ---
+                checkPageBreak(15);
+                doc.setFontSize(18);
+                doc.text("Times Sorteados", margin, y);
+                y += 8;
+                
+                if (times.length > 0) {
+                    times.forEach(time => {
+                        checkPageBreak(15); // Espaço para título e jogadores
+                        
+                        // Título do Time (com cor)
+                        doc.setFontSize(14);
+                        doc.setTextColor(time.colorHex); // Aplica a cor do time!
+                        doc.text(`${time.nome} (${time.colorName}) [${time.tipo}]`, margin + 5, y);
+                        
+                        // Lista de Jogadores (preto)
+                        doc.setTextColor(0); // Reseta para preto
+                        doc.setFontSize(10);
+                        y += 6;
+                        // doc.text(time.jogadores.join(', '), margin + 5, y);
+                        // Quebra a lista de jogadores em linhas se for muito longa
+                        let playerLines = doc.splitTextToSize(time.jogadores.join(', '), 180);
+                        doc.text(playerLines, margin + 5, y);
+                        y += (playerLines.length * 5) + 5; // Adiciona espaço extra
+
+                    });
+                } else {
+                    doc.setFontSize(10);
+                    doc.text("Nenhum time foi sorteado.", margin + 5, y);
+                    y += 10;
+                }
+
+                // --- Seção 2: Ordem das Partidas ---
+                checkPageBreak(15);
+                y += 5; // Espaço antes da seção
+                doc.setFontSize(18);
+                doc.text("Ordem das Partidas (Todos vs Todos)", margin, y);
+                y += 8;
+                doc.setFontSize(10);
+                
+                if (partidas.length > 0) {
+                    partidas.forEach((partida, index) => {
+                        checkPageBreak(8); // Espaço para uma linha
+                        
+                        const timeAName = partida[0];
+                        const timeBName = partida[1];
+                        const timeA = times.find(t => t.nome === timeAName);
+                        const timeB = times.find(t => t.nome === timeBName);
+                        
+                        let partidaTexto = `Jogo ${index + 1}: ${timeAName} vs ${timeBName}`;
+                        if(timeA && timeB) {
+                             partidaTexto = `Jogo ${index + 1}: ${timeA.nome} (${timeA.colorName}) vs ${timeB.nome} (${timeB.colorName})`;
+                        }
+                        
+                        doc.text(partidaTexto, margin + 5, y);
+                        y += 6;
+                    });
+                } else {
+                    doc.text("Nenhuma partida foi gerada.", margin + 5, y);
+                    y += 10;
+                }
+                
+                // --- Seção 3: Resultados Salvos ---
+                checkPageBreak(15);
+                y += 5; // Espaço antes da seção
+                doc.setFontSize(18);
+                doc.text("Resultados Salvos", margin, y);
+                y += 8;
+                doc.setFontSize(10);
+                
+                if (resultadosFinais.length > 0) {
+                     resultadosFinais.forEach(resultado => {
+                        checkPageBreak(8);
+                        doc.text(resultado, margin + 5, y);
+                        y += 6;
+                     });
+                } else {
+                    doc.text("Nenhum resultado foi salvo.", margin + 5, y);
+                }
+
+                // 4. Salva o arquivo
+                doc.save(filename);
+            });
 
 
             // --- Funções Utilitárias ---
             
-            // --- NOVO: Função de Cópia Automática ---
+            // --- Função de Cópia Automática ---
             async function copyTextToClipboard(text, elementToSelect) {
                 // Tenta usar a API moderna (navigator.clipboard)
                 // Isso funciona em HTTPS ou localhost
