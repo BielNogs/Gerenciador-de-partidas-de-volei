@@ -23,7 +23,7 @@
             padding: 20px;
         }
 
-        /* --- Efeito de "Blobs" de Fundo --- */
+        /* --- Efeito de "Blobs" de Fundo para o Glassmorphism --- */
         body::before,
         body::after {
             content: '';
@@ -33,10 +33,26 @@
             filter: blur(100px);
             opacity: 0.2;
         }
-        body::before { background: #9f55ff; width: 350px; height: 350px; top: -100px; left: -100px; }
-        body::after { background: #008cff; width: 400px; height: 400px; bottom: -150px; right: -150px; }
 
-        /* --- Estilo "Liquid Glass" --- */
+        /* Blob 1 */
+        body::before {
+            background: #9f55ff; /* Roxo */
+            width: 350px;
+            height: 350px;
+            top: -100px;
+            left: -100px;
+        }
+
+        /* Blob 2 */
+        body::after {
+            background: #008cff; /* Azul */
+            width: 400px;
+            height: 400px;
+            bottom: -150px;
+            right: -150px;
+        }
+
+        /* --- Estilo "Liquid Glass" (Glassmorphism) --- */
         .glass-effect {
             background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(12px);
@@ -46,50 +62,71 @@
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
         }
 
-        /* --- Layout Principal --- */
+        /* --- Container Principal --- */
         .app-container {
             max-width: 900px;
             margin: 40px auto;
             padding: 25px;
         }
 
-        /* --- Abas de Navegação --- */
+        /* --- Abas de Navegação (HEADER) --- */
         .tabs {
-            display: flex;
+            display: flex; /* Garante que fiquem lado a lado */
             gap: 10px;
             margin-bottom: 20px;
-            flex-wrap: wrap;
+            flex-wrap: wrap; /* Permite que as abas quebrem em telas menores */
         }
+
         .tab-link {
-            flex-grow: 1;
-            flex-basis: 0;
-            min-width: 120px;
+            flex-grow: 1; /* Faz com que dividam o espaço igualmente */
+            flex-basis: 0; /* Necessário para o flex-grow funcionar bem */
+            width: auto; 
+            min-width: 140px; /* Evita que fiquem muito pequenos antes de quebrar */
             padding: 12px 15px;
             cursor: pointer;
             text-align: center;
             color: #ffffff;
             font-weight: 600;
             transition: all 0.3s ease;
+            
+            /* Remove estilos de botão padrão se necessário */
             border: none;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 16px; /* Arredondado nas abas também */
+            background: none; /* Removido para usar o glass-effect */
         }
+        
+        .tab-link:not(.active) {
+             background: rgba(255, 255, 255, 0.08); /* Fundo glass padrão */
+        }
+
         .tab-link.active {
-            background: rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.25); /* Mais destaque para a aba ativa */
             font-weight: 700;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-link:not(.active):hover {
+            background: rgba(255, 255, 255, 0.15);
         }
 
         /* --- Conteúdo das Abas --- */
         .tab-content-container {
             padding: 25px;
         }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
 
-        /* --- Formulários --- */
-        textarea, input[type="number"], button, select {
-            width: 100%;
+        .tab-content {
+            display: none; /* Esconde todas as abas por padrão */
+        }
+
+        .tab-content.active {
+            display: block; /* Mostra apenas a aba ativa */
+        }
+
+        /* --- Estilização de Formulários (Inputs, Botões) --- */
+        textarea,
+        input[type="number"],
+        button,
+        select { /* Adicionado select */
+            width: 100%; /* Esta regra estava quebrando as abas */
             padding: 12px;
             margin-top: 10px;
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -98,10 +135,15 @@
             color: #ffffff;
             font-size: 16px;
         }
-        select option { background: #12121e; }
-        textarea::placeholder { color: #aaa; }
+        
+        select option {
+            background: #12121e;
+        }
 
-        /* --- Botões de Ação --- */
+        textarea::placeholder {
+            color: #aaa;
+        }
+
         button {
             background: #007bff;
             color: white;
@@ -109,35 +151,55 @@
             cursor: pointer;
             transition: background-color 0.3s ease;
             margin-top: 20px;
-            border: none;
         }
-        button:hover { background: #0056b3; }
-        button:disabled { background: #555; cursor: not-allowed; }
+        
+        /* --- Botões de 'Copiar' em verde --- */
+        #btn-gerar-lista-times,
+        #btn-gerar-lista-partidas,
+        #btn-copiar-resultados { 
+             background: #28a745; /* Botão verde para 'copiar' */
+        }
+        #btn-gerar-lista-times:hover,
+        #btn-gerar-lista-partidas:hover,
+        #btn-copiar-resultados:hover { 
+             background: #218838;
+        }
+        
+        /* --- Botão de 'Limpar' em vermelho --- */
+        #btn-limpar-resultados {
+            background: #dc3545; /* Vermelho 'perigo' */
+        }
+        #btn-limpar-resultados:hover {
+            background: #c82333;
+        }
 
-        /* Cores específicas de botões */
-        .btn-green { background: #28a745; }
-        .btn-green:hover { background: #218838; }
-        .btn-red { background: #dc3545; }
-        .btn-red:hover { background: #c82333; }
+        button:hover {
+            background: #0056b3;
+        }
+        
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
 
-        /* --- Layout de Configuração (Gêneros lado a lado) --- */
-        .gender-input-container {
+        /* --- NOVO: Estilo para os inputs divididos por gênero --- */
+        .gender-split {
             display: flex;
             gap: 20px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
-        .gender-block {
+        .gender-column {
             flex: 1;
         }
-        .gender-block h3 {
+        .gender-column h3 {
             margin-bottom: 5px;
-            font-size: 1.1em;
+            color: #e0e0e0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        #men-input { border-color: rgba(0, 170, 255, 0.3); }
-        #women-input { border-color: rgba(255, 105, 180, 0.3); }
 
-
-        /* --- Placar --- */
+        /* --- Estilização Específica do Placar --- */
         .scoreboard {
             display: flex;
             justify-content: space-around;
@@ -145,132 +207,268 @@
             text-align: center;
             margin: 20px 0;
         }
+
         .score-display {
             font-size: 4rem;
             font-weight: bold;
             margin: 10px 0;
             color: #fff;
         }
-        .score-vs { font-size: 2rem; color: #aaa; }
+
+        .score-vs {
+            font-size: 2rem;
+            color: #aaa;
+        }
+
         .btn-score {
             font-size: 2rem;
-            width: 60px; height: 60px;
+            width: 60px; /* Este é mais específico, então sobrescreve o width: 100% */
+            height: 60px;
             line-height: 60px;
             border-radius: 50%;
             padding: 0;
         }
+        
+        #placar-setup {
+            margin-bottom: 20px;
+        }
 
-        /* --- Times (Cards Neon) --- */
+        /* --- Estilização dos Times Gerados (COM CORES NEON) --- */
         #teams-output {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            /* Esta linha já é responsiva! */
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
             gap: 15px;
             margin-bottom: 20px;
         }
+
         .team-card {
             padding: 15px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 12px;
-            border: 2px solid var(--team-color, rgba(255,255,255,0.1));
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 8px;
+            
+            /* --- ESTILOS NEON (agora com cores suaves) --- */
+            /* A cor é injetada via JS na var --team-color */
+            border: 2px solid var(--team-color, rgba(255, 255, 255, 0.1));
             box-shadow: 0 0 8px 0px var(--team-color, transparent), 
-                        0 0 20px 1px var(--team-color, transparent) inset;
-            transition: all 0.3s ease;
+                        0 0 12px 1px var(--team-color, transparent) inset;
+            transition: box-shadow 0.3s ease;
         }
+        
         .team-card:hover {
              box-shadow: 0 0 15px 2px var(--team-color, transparent), 
-                        0 0 30px 5px var(--team-color, transparent) inset;
+                        0 0 12px 1px var(--team-color, transparent) inset;
         }
+
         .team-card h3 {
-            color: var(--team-color, #00aaff);
-            border-bottom: 1px solid var(--team-color, rgba(255,255,255,0.1));
-            padding-bottom: 8px;
+            /* A cor é injetada via JS */
+            color: var(--team-color, #00aaff); 
+            border-bottom: 1px solid var(--team-color, #00aaff);
+            padding-bottom: 5px;
             margin-bottom: 10px;
         }
-        .team-card ul { list-style: none; padding-left: 0; }
-        .team-card li {
-            padding: 4px 8px;
-            margin-bottom: 4px;
-            border-radius: 4px;
-            background: rgba(255,255,255,0.03);
-            display: flex;
-            justify-content: space-between;
-        }
-        .gender-tag {
-            font-size: 0.8em;
-            opacity: 0.7;
-            font-weight: bold;
-        }
-        .tag-m { color: #42A5F5; } /* Azul claro para M */
-        .tag-f { color: #F48FB1; } /* Rosa claro para F */
 
+        .team-card ul {
+            list-style: none;
+            padding-left: 0;
+            margin-top: 10px;
+        }
+        
+        .team-card li {
+            padding: 2px 0;
+        }
+        
+        /* --- ESTILO PARA AS NOTAS DE REVEZAMENTO --- */
         .team-card-note {
             font-size: 0.85em;
-            color: #ffab00;
-            background: rgba(255, 171, 0, 0.15);
+            color: #ffab00; /* Laranja/Amarelo para destaque */
+            background: rgba(255, 171, 0, 0.1);
             padding: 8px;
-            border-radius: 6px;
-            margin-top: 12px;
+            border-radius: 4px;
+            margin-top: 10px;
         }
-
-        /* --- Áreas de Texto de Cópia (escondidas por padrão) --- */
-        .copy-textarea {
-            display: none;
+        .team-card-note-loan {
+             /* Cor do H3 (variável) para a nota de emprestar */
+             color: var(--team-color, #00aaff); 
+             background: rgba(0, 170, 255, 0.1);
+        }
+        
+        #rotation-output h3 {
+            color: #ffab00;
+            margin-top: 20px;
+            border-bottom: 1px solid #ffab00;
+            padding-bottom: 5px;
+        }
+        #rotation-output p {
+            margin-bottom: 10px;
+        }
+        
+        /* --- Textarea para Copiar Times --- */
+        #teams-list-output,
+        #partidas-list-output { 
+            display: none; /* Começa escondido */
             margin-top: 15px;
-            height: 150px;
-            font-family: monospace;
-            font-size: 0.9em;
+            height: 200px;
+            background: rgba(0,0,0,0.3);
+            color: #fff;
         }
-
-        /* --- Listas e Descrições --- */
-        #match-list li {
-            padding: 10px;
-            background: rgba(0,0,0,0.25);
+        
+        /* --- Aba de Partidas --- */
+        #match-list-description {
+            padding: 15px;
+            background: rgba(0, 100, 200, 0.1);
+            border: 1px solid rgba(0, 150, 255, 0.3);
             border-radius: 8px;
-            margin-bottom: 8px;
-            border-left: 4px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
         }
-        #rotation-output h3 { color: #ffab00; margin-top: 30px; border-bottom: 1px solid #ffab00; }
+        
+        #match-list li {
+            padding: 8px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+        
+        /* Div para o botão/textarea de copiar partidas */
+        #partidas-list-copy {
+            margin-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 20px;
+        }
 
 
-        /* --- Responsividade --- */
+        /* Aplicando o efeito Glass nos elementos principais */
+        .app-container,
+        .tab-link,
+        .tab-content-container {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        
+        /* ------------------------------------------
+        --- REGRAS DE RESPONSIVIDADE ---
+        ------------------------------------------
+        */
+        
+        /* Tablets e Telas Menores (abaixo de 768px) */
         @media (max-width: 768px) {
-            body { padding: 10px; }
-            .app-container { margin: 10px auto; padding: 15px; }
-            .gender-input-container { flex-direction: column; gap: 10px; }
+            body {
+                padding: 10px; /* Reduz padding do corpo */
+            }
+            
+            .app-container {
+                margin: 10px auto;
+                padding: 15px; /* Reduz padding do container */
+            }
+
+            .tab-content-container {
+                padding: 15px;
+            }
+            
+            /* Quebra os inputs de gênero em duas linhas no tablet/celular */
+            .gender-split {
+                flex-direction: column;
+                gap: 10px;
+            }
         }
+
+        /* Celulares (abaixo de 480px) */
         @media (max-width: 480px) {
-            body { padding: 0; }
-            .app-container { margin: 0; border-radius: 0; border: none; }
-            .glass-effect { background: #1a1a2e; backdrop-filter: none; } /* Fallback sólido para mobile */
-            .score-display { font-size: 3rem; }
-            .btn-score { width: 50px; height: 50px; line-height: 50px; font-size: 1.5rem; }
+            body {
+                padding: 0; /* Remove padding do body, deixa o app-container tomar conta */
+                font-size: 14px; /* Reduz fonte base */
+            }
+
+            .app-container {
+                margin: 0;
+                padding: 10px;
+                border-radius: 0; /* Tela cheia no celular */
+                border: none;
+                box-shadow: none; /* Remove sombra no celular */
+            }
+            
+            .glass-effect {
+                /* Desliga o efeito glass no celular, pode ser pesado e desnecessário */
+                background: rgba(255, 255, 255, 0.05);
+                backdrop-filter: none;
+                -webkit-backdrop-filter: none;
+            }
+            
+            /* Títulos */
+            h2 {
+                font-size: 1.3rem;
+                margin-bottom: 15px;
+            }
+            h3 {
+                font-size: 1.1rem;
+            }
+
+            /* Abas */
+            .tabs {
+                gap: 5px; /* Menos espaço entre abas */
+            }
+            .tab-link {
+                font-size: 0.85rem;
+                padding: 10px 5px;
+                min-width: 100px; /* Menor */
+            }
+
+            /* Placar */
+            .scoreboard {
+                flex-wrap: wrap; /* Permite quebrar se necessário */
+                gap: 10px;
+            }
+            .score-display {
+                font-size: 2.5rem; /* Reduz drasticamente o placar */
+            }
+            .score-vs {
+                font-size: 1.5rem;
+            }
+            .btn-score {
+                width: 50px;
+                height: 50px;
+                line-height: 50px;
+                font-size: 1.5rem;
+            }
+            
+            /* Textareas de "Copiar" */
+            #teams-list-output,
+            #partidas-list-output {
+                height: 150px;
+            }
         }
+        
     </style>
 </head>
 <body>
 
-    <div class="app-container glass-effect">
+    <div class="app-container">
         <nav class="tabs">
-            <button class="tab-link active" data-tab="tab-config">⚙️ Início</button>
+            <button class="tab-link active" data-tab="tab-config">⚙️ Configuração</button>
             <button class="tab-link" data-tab="tab-times">👥 Times</button>
             <button class="tab-link" data-tab="tab-partidas">⚔️ Partidas</button>
             <button class="tab-link" data-tab="tab-placar">🔢 Placar</button>
             <button class="tab-link" data-tab="tab-resultados">📋 Resultados</button>
         </nav>
 
-        <main class="tab-content-container glass-effect">
+        <main class="tab-content-container">
 
             <section id="tab-config" class="tab-content active">
                 <h2>⚙️ Configuração da Rodada</h2>
                 <p>Insira os nomes dos jogadores nas listas correspondentes para balancear os times.</p>
                 
-                <div class="gender-input-container">
-                    <div class="gender-block">
-                        <h3>🚹 Masculino</h3>
+                <div class="gender-split">
+                    <div class="gender-column">
+                        <h3 style="color: #90CAF9;">🚹 Masculino</h3>
                         <textarea id="men-input" rows="10" placeholder="Lista de homens..."></textarea>
                     </div>
-                    <div class="gender-block">
-                        <h3>🚺 Feminino</h3>
+                    <div class="gender-column">
+                        <h3 style="color: #F48FB1;">🚺 Feminino</h3>
                         <textarea id="women-input" rows="10" placeholder="Lista de mulheres..."></textarea>
                     </div>
                 </div>
@@ -280,32 +478,44 @@
 
             <section id="tab-times" class="tab-content">
                 <h2>👥 Times Sorteados</h2>
-                <div id="teams-output"></div>
+                <div id="teams-output">
+                    </div>
                 
-                <button id="btn-gerar-lista-times" class="btn-green">📄 Copiar Lista de Times</button>
-                <textarea id="teams-list-output" class="copy-textarea" readonly></textarea>
+                <button id="btn-gerar-lista-times">Gerar Lista para Copiar</button>
+                <textarea id="teams-list-output" readonly placeholder="A lista dos times para copiar aparecerá aqui..."></textarea>
                 
-                <div id="rotation-output"></div>
+                <div id="rotation-output">
+                    </div>
             </section>
 
             <section id="tab-partidas" class="tab-content">
                 <h2>⚔️ Controle de Partidas</h2>
-                <div style="margin-bottom: 15px; padding: 10px; background: rgba(0,150,255,0.1); border-radius: 8px;">
-                    <p><strong>Regra de Pausa:</strong> Times que jogarem <strong>2 vezes seguidas</strong> devem descansar na próxima.</p>
-                </div>
-                <ul id="match-list"></ul>
                 
-                <button id="btn-gerar-lista-partidas" class="btn-green">📄 Copiar Ordem dos Jogos</button>
-                <textarea id="partidas-list-output" class="copy-textarea" readonly></textarea>
+                <div id="match-list-description">
+                    <p>Abaixo está a lista de todos os jogos possíveis ("todos contra todos").</p>
+                    <p><strong>Como funciona a regra da pausa:</strong></O>
+                    <p>Ao usar a aba "Placar", você (o operador) deve seguir a regra: um time que jogar <strong>2 partidas seguidas</strong> deve <strong>descansar na próxima</strong> rodada de jogos.</p>
+                    <p>O sistema apenas lista as partidas. O controle de quem joga e quem pausa é feito por você ao selecionar a partida na aba "Placar".</p>
+                </div>
+                
+                <ul id="match-list">
+                    </ul>
+                
+                <div id="partidas-list-copy">
+                    <button id="btn-gerar-lista-partidas">📋 Gerar Lista de Partidas para Copiar</button>
+                    <textarea id="partidas-list-output" readonly placeholder="A lista de partidas para copiar aparecerá aqui..."></textarea>
+                </div>
             </section>
 
             <section id="tab-placar" class="tab-content">
-                <h2>🔢 Placar ao Vivo</h2>
+                <h2>🔢 Placar da Partida</h2>
+                
                 <div id="placar-setup">
+                    <label for="match-selector">Selecione a Partida:</label>
                     <select id="match-selector">
-                        <option value="">-- Selecione a partida para iniciar --</option>
+                        <option value="">-- Primeiro gere as partidas --</option>
                     </select>
-                    <button id="btn-iniciar-partida">▶️ Iniciar Partida</button>
+                    <button id="btn-iniciar-partida">Iniciar Partida Selecionada</button>
                 </div>
                 
                 <div class="scoreboard">
@@ -321,19 +531,19 @@
                         <button class="btn-score" data-team="b" disabled>+</button>
                     </div>
                 </div>
-                <button id="btn-reset-placar">🔄 Resetar Placar</button>
-                <button id="btn-finalizar-partida" disabled>✅ Finalizar & Salvar (25pts)</button>
+                <button id="btn-reset-placar">Resetar Placar</button>
+                <button id="btn-finalizar-partida" disabled>Finalizar Partida (25pts)</button>
             </section>
 
             <section id="tab-resultados" class="tab-content">
-                <h2>📋 Histórico de Resultados</h2>
-                <textarea id="results-output" rows="12" readonly style="font-family: monospace;"></textarea>
+                <h2>📋 Resultados Salvos</h2>
+                <p>Resultados das partidas finalizadas, prontos para copiar:</p>
+                <textarea id="results-output" rows="15" readonly></textarea>
                 
-                <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
-                    <button id="btn-copiar-resultados" class="btn-green" style="flex: 1; margin-top:0;">📄 Copiar Tudo</button>
-                    <button id="btn-baixar-resumo" style="flex: 1; margin-top:0;">💾 Baixar PDF</button>
-                    <button id="btn-limpar-resultados" class="btn-red" style="flex: 1; margin-top:0;">🗑️ Limpar Histórico</button>
-                </div>
+                <button id="btn-copiar-resultados">📋 Copiar Resultados Salvos</button>
+                <button id="btn-baixar-resumo">💾 Baixar Resumo do Dia (PDF)</button>
+                
+                <button id="btn-limpar-resultados">❌ Limpar Histórico Salvo</button>
             </section>
 
         </main>
@@ -343,407 +553,415 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- Configurações Globais ---
-            const TEAM_SIZE = 6;
-            const MIN_TOTAL_PLAYERS = 13;
-            const STORAGE_KEY = 'volei_app_results_v1';
 
+            // --- LÓGICA DE NAVEGAÇÃO POR ABAS ---
+
+            const tabLinks = document.querySelectorAll('.tab-link');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    const tabId = link.getAttribute('data-tab');
+                    // Remove 'active' de todos
+                    tabLinks.forEach(item => item.classList.remove('active'));
+                    tabContents.forEach(item => item.classList.remove('active'));
+                    // Adiciona 'active' ao clicado
+                    link.classList.add('active');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+
+            // --- FIM DA LÓGICA DE ABAS ---
+
+
+            // --- INÍCIO DA LÓGICA DO JOGO ---
+
+            // Elementos da UI
+            const btnSortear = document.getElementById('btn-sortear');
+            // NOVOS INPUTS SEPARADOS
+            const menInput = document.getElementById('men-input');
+            const womenInput = document.getElementById('women-input');
+            
+            const teamsOutput = document.getElementById('teams-output');
+            const rotationOutput = document.getElementById('rotation-output');
+            
+            const matchList = document.getElementById('match-list');
+            const matchSelector = document.getElementById('match-selector');
+            const btnIniciarPartida = document.getElementById('btn-iniciar-partida');
+            
+            const resultsOutput = document.getElementById('results-output');
+            
+            const btnGerarListaTimes = document.getElementById('btn-gerar-lista-times');
+            const teamsListOutput = document.getElementById('teams-list-output');
+            
+            const btnGerarListaPartidas = document.getElementById('btn-gerar-lista-partidas');
+            const partidasListOutput = document.getElementById('partidas-list-output');
+            
+            const btnCopiarResultados = document.getElementById('btn-copiar-resultados');
+            const btnLimparResultados = document.getElementById('btn-limpar-resultados');
+            const btnBaixarResumo = document.getElementById('btn-baixar-resumo');
+
+
+            // --- Lista de Cores para Times (Tons mais suaves) ---
             const teamColors = [
-                 { name: "Laranja", hex: "#FFAB91" }, { name: "Verde", hex: "#A5D6A7" },
-                 { name: "Azul", hex: "#90CAF9" },    { name: "Rosa", hex: "#F48FB1" },
-                 { name: "Roxo", hex: "#CE93D8" },    { name: "Amarelo", hex: "#FFF59D" },
-                 { name: "Ciano", hex: "#80DEEA" },   { name: "Vermelho", hex: "#EF9A9A" }
+                { name: "Laranja", hex: "#FF8A65" }, { name: "Verde", hex: "#66BB6A" },
+                { name: "Azul", hex: "#42A5F5" },     { name: "Rosa", hex: "#F06292" },
+                { name: "Ciano", hex: "#26C6DA" },    { name: "Amarelo", hex: "#FFEE58" },
+                { name: "Violeta", hex: "#AB47BC" }
             ];
 
-            // --- Estado da Aplicação ---
-            let state = {
-                times: [],    // { nome, jogadores: [{nome, genero}], tipo, colorName, colorHex }
-                partidas: [], // [ [nomeTimeA, nomeTimeB], ... ]
-                resultados: []
-            };
+            // Variáveis globais
+            let times = []; 
+            let partidas = []; 
+            let resultadosFinais = []; 
 
-            // --- Referências de Elementos ---
-            const els = {
-                tabs: document.querySelectorAll('.tab-link'),
-                contents: document.querySelectorAll('.tab-content'),
-                menInput: document.getElementById('men-input'),
-                womenInput: document.getElementById('women-input'),
-                teamsOutput: document.getElementById('teams-output'),
-                rotationOutput: document.getElementById('rotation-output'),
-                matchList: document.getElementById('match-list'),
-                matchSelector: document.getElementById('match-selector'),
-                resultsOutput: document.getElementById('results-output'),
-                scoreA: document.getElementById('score-a'),
-                scoreB: document.getElementById('score-b'),
-                nameA: document.getElementById('placar-time-a'),
-                nameB: document.getElementById('placar-time-b'),
-                btnsScore: document.querySelectorAll('.btn-score'),
-                btnFinalizar: document.getElementById('btn-finalizar-partida'),
-                teamsListCopy: document.getElementById('teams-list-output'),
-                partidasListCopy: document.getElementById('partidas-list-output')
-            };
-
-            // =========================================
-            // 1. NAVEGAÇÃO E UTILITÁRIOS
-            // =========================================
-            function switchTab(tabId) {
-                els.tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
-                els.contents.forEach(c => c.classList.toggle('active', c.id === tabId));
-            }
-            els.tabs.forEach(link => link.addEventListener('click', () => switchTab(link.dataset.tab)));
-
-            function shuffle(array) {
-                for (let i = array.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [array[i], array[j]] = [array[j], array[i]];
+            // --- Persistência ---
+            const STORAGE_KEY = 'gerenciadorPartidasResultados';
+            function loadResultsFromLocalStorage() {
+                const dadosSalvos = localStorage.getItem(STORAGE_KEY);
+                if (dadosSalvos) {
+                    resultadosFinais = JSON.parse(dadosSalvos);
+                    resultsOutput.value = resultadosFinais.join('\n');
                 }
-                return array;
             }
-
-            async function copyToClipboard(text, fallbackElement) {
-                if (navigator.clipboard && window.isSecureContext) {
-                    try {
-                        await navigator.clipboard.writeText(text);
-                        alert('Copiado para a área de transferência!');
-                        return;
-                    } catch (e) { console.error(e); }
-                }
-                fallbackElement.style.display = 'block';
-                fallbackElement.value = text;
-                fallbackElement.select();
-                alert('Seu navegador bloqueou a cópia automática. Copie manualmente da caixa de texto que apareceu.');
+            function saveResultsToLocalStorage() {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(resultadosFinais));
             }
+            loadResultsFromLocalStorage();
 
-            // =========================================
-            // 2. NÚCLEO: SORTEIO BALANCEADO
-            // =========================================
-            document.getElementById('btn-sortear').addEventListener('click', () => {
-                // 1. Coleta e limpa nomes
-                const getNames = (textarea) => textarea.value.split('\n').map(n => n.trim()).filter(n => n);
-                let men = getNames(els.menInput);
-                let women = getNames(els.womenInput);
+            // --- 1. Sorteio de Jogadores (AGORA BALANCEADO) ---
+            btnSortear.addEventListener('click', () => {
+                // 1. Lê as duas listas separadamente
+                let men = menInput.value.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+                let women = womenInput.value.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+                
                 const totalPlayers = men.length + women.length;
-
-                if (totalPlayers < MIN_TOTAL_PLAYERS) {
-                    alert(`Mínimo de ${MIN_TOTAL_PLAYERS} jogadores necessários. Atual: ${totalPlayers}.`);
+                const minJogadores = 13; 
+                
+                if (totalPlayers < minJogadores) {
+                    alert(`São necessários pelo menos ${minJogadores} jogadores no total. Atual: ${totalPlayers}.`);
                     return;
                 }
-
-                // 2. Prepara para o sorteio
-                men = shuffle(men);
-                women = shuffle(women);
-                state.times = [];
+                
+                // Embaralha as listas separadamente
+                men = shuffleArray(men);
+                women = shuffleArray(women);
+                
+                // Limpa saídas anteriores
+                teamsOutput.innerHTML = '';
+                rotationOutput.innerHTML = '';
+                teamsListOutput.style.display = 'none';
+                partidasListOutput.style.display = 'none';
+                times = [];
                 let teamCounter = 1;
 
-                // 3. Calcula quantos times COMPLETOS (6 jogadores) podemos formar
-                const numFullTeams = Math.floor(totalPlayers / TEAM_SIZE);
+                // --- LÓGICA DE SORTEIO BALANCEADO ---
                 
-                // 4. Loop para criar os times COMPLETOS balanceados
+                // Função auxiliar para criar time
+                function createTeamObj(playersList, type) {
+                    const colorObj = teamColors[(teamCounter - 1) % teamColors.length];
+                    return {
+                        nome: `Time ${teamCounter++}`,
+                        jogadores: shuffleArray(playersList), // Embaralha a ordem interna do time
+                        tipo: type,
+                        colorName: colorObj.name,
+                        colorHex: colorObj.hex
+                    };
+                }
+
+                // Calcula quantos times COMPLETOS (6 jogadores) podemos formar
+                const numFullTeams = Math.floor(totalPlayers / 6);
+
+                // Loop para criar os times completos tentando balancear
                 for (let i = 0; i < numFullTeams; i++) {
                     let teamPlayers = [];
                     
-                    // Calcula quantos ainda estão disponíveis
+                    // Calcula a proporção ideal baseada nos jogadores RESTANTES
                     const menLeft = men.length;
                     const womenLeft = women.length;
                     const totalLeft = menLeft + womenLeft;
+                    
+                    // Quantos homens e mulheres esse time deve ter idealmente?
+                    let numMenToTake = Math.round(6 * (menLeft / totalLeft));
+                    let numWomenToTake = 6 - numMenToTake;
 
-                    // Calcula a proporção ideal para ESTE time baseado no que sobrou
-                    // (Isso evita que o último time fique só com um gênero se o arredondamento falhar)
-                    let numMenToTake = Math.round(TEAM_SIZE * (menLeft / totalLeft));
-                    let numWomenToTake = TEAM_SIZE - numMenToTake;
-
-                    // Ajustes de segurança se faltar gente de um gênero específico
+                    // Ajustes de segurança se faltar gente de um gênero
                     if (numMenToTake > menLeft) {
                         numMenToTake = menLeft;
-                        numWomenToTake = TEAM_SIZE - numMenToTake;
+                        numWomenToTake = 6 - numMenToTake;
                     } else if (numWomenToTake > womenLeft) {
                         numWomenToTake = womenLeft;
-                        numMenToTake = TEAM_SIZE - numWomenToTake;
+                        numMenToTake = 6 - numWomenToTake;
                     }
 
-                    // Puxa os jogadores das listas principais
-                    for (let m = 0; m < numMenToTake; m++) teamPlayers.push({ name: men.pop(), gender: 'M' });
-                    for (let w = 0; w < numWomenToTake; w++) teamPlayers.push({ name: women.pop(), gender: 'F' });
+                    // Puxa os jogadores e adiciona a tag (M) ou (F)
+                    for (let k = 0; k < numMenToTake; k++) teamPlayers.push(`${men.pop()} (M)`);
+                    for (let k = 0; k < numWomenToTake; k++) teamPlayers.push(`${women.pop()} (F)`);
 
-                    // Registra o time
-                    const color = teamColors[(teamCounter - 1) % teamColors.length];
-                    state.times.push({
-                        nome: `Time ${teamCounter++}`,
-                        jogadores: shuffle(teamPlayers), // Embaralha a ordem interna do time
-                        tipo: 'completo',
-                        colorName: color.name,
-                        colorHex: color.hex
-                    });
+                    times.push(createTeamObj(teamPlayers, "completo"));
                 }
 
-                // 5. Trata os SOBRESSALENTES (Revezamento ou Reserva)
+                // Sobras formam o time de Revezamento ou Reserva
                 let leftovers = [];
-                while (men.length) leftovers.push({ name: men.pop(), gender: 'M' });
-                while (women.length) leftovers.push({ name: women.pop(), gender: 'F' });
+                while (men.length > 0) leftovers.push(`${men.pop()} (M)`);
+                while (women.length > 0) leftovers.push(`${women.pop()} (F)`);
 
                 if (leftovers.length > 0) {
-                    const color = teamColors[(teamCounter - 1) % teamColors.length];
-                    // Regra: 3 a 5 = Revezamento, 1 a 2 = Reserva
-                    const tipo = (leftovers.length >= 3) ? 'revezamento' : 'reserva';
-                    state.times.push({
-                        nome: `Time ${teamCounter++}`,
-                        jogadores: shuffle(leftovers),
-                        tipo: tipo,
-                        colorName: color.name,
-                        colorHex: color.hex
-                    });
+                    const type = leftovers.length >= 3 ? "revezamento" : "reserva";
+                    times.push(createTeamObj(leftovers, type));
                 }
-
-                renderTeams();
-                generateMatches();
-                switchTab('tab-times');
+                
+                exibirTimes();
+                gerarPartidas(); 
+                mudarDeAba('tab-times');
             });
 
-            // --- Renderização dos Times na Tela ---
-            function renderTeams() {
-                els.teamsOutput.innerHTML = '';
-                els.rotationOutput.innerHTML = '';
-                let hasRotation = false, hasReserves = false;
+            // *** FUNÇÃO ATUALIZADA (com Cores e Notas) ***
+            function exibirTimes() {
+                teamsOutput.innerHTML = '';
+                rotationOutput.innerHTML = '';
+                
+                let hasRotation = false;
+                let hasReserves = false;
+                let reservePlayers = [];
 
-                state.times.forEach(time => {
+                times.forEach(time => {
                     const card = document.createElement('div');
                     card.className = 'team-card';
                     card.style.setProperty('--team-color', time.colorHex);
+                    
+                    let tipoTimeLabel = "";
+                    let cardNote = "";
 
-                    let note = '';
-                    if (time.tipo === 'completo') {
-                         note = `<div class="team-card-note" style="background:${time.colorHex}33">Empresta jogadores na pausa.</div>`;
-                    } else if (time.tipo === 'revezamento') {
-                        hasRotation = true;
-                        note = `<div class="team-card-note">Recebe ${TEAM_SIZE - time.jogadores.length} jogador(es) de quem pausa.</div>`;
-                    } else {
-                        hasReserves = true;
-                        note = `<div class="team-card-note">Aguardam a próxima rodada.</div>`;
+                    switch(time.tipo) {
+                        case 'completo':
+                            tipoTimeLabel = "(Completo)";
+                            cardNote = `<div class="team-card-note team-card-note-loan" style="background-color: ${time.colorHex}1A;"><b>Empresta jogadores</b> para times de revezamento quando estiver de pausa.</div>`;
+                            break;
+                        case 'revezamento':
+                            tipoTimeLabel = "(Revezamento)";
+                            const needs = 6 - time.jogadores.length;
+                            cardNote = `<div class="team-card-note"><b>Recebe ${needs} jogador(es)</b> do time que está de pausa.</div>`;
+                            hasRotation = true;
+                            break;
+                        case 'reserva':
+                            tipoTimeLabel = "(Reserva)";
+                            cardNote = `<div class="team-card-note"><b>Não joga.</b> Fica na espera.</div>`;
+                            hasReserves = true;
+                            reservePlayers.push(...time.jogadores);
+                            break;
                     }
-
-                    const listHtml = time.jogadores.map(p => `
-                        <li>
-                            <span>${p.name}</span>
-                            <span class="gender-tag tag-${p.gender.toLowerCase()}">${p.gender}</span>
-                        </li>
-                    `).join('');
-
+                    
+                    let listaJogadoresHTML = time.jogadores.map(j => `<li>${j}</li>`).join('');
+                    
                     card.innerHTML = `
-                        <h3>${time.nome} (${time.colorName}) <small>[${time.tipo}]</small></h3>
-                        <ul>${listHtml}</ul>
-                        ${note}
+                        <h3>${time.nome} (${time.colorName}) <span style="font-weight: 400; font-size: 0.9em;">${tipoTimeLabel}</span></h3>
+                        <ul>${listaJogadoresHTML}</ul>
+                        ${cardNote}
                     `;
-                    els.teamsOutput.appendChild(card);
+                    teamsOutput.appendChild(card);
                 });
-
-                // Explicação das regras no rodapé
-                if (hasRotation || hasReserves) {
-                    els.rotationOutput.innerHTML = '<h3>Regras Ativas:</h3>';
-                    if (hasRotation) els.rotationOutput.innerHTML += '<p>🔄 <strong>Revezamento:</strong> O time incompleto joga pegando emprestado jogadores do time que estiver descansando na rodada.</p>';
-                    if (hasReserves) els.rotationOutput.innerHTML += '<p>⏳ <strong>Reserva:</strong> Jogadores insuficientes para formar base de time. Aguardam nova formação.</p>';
+                
+                rotationOutput.innerHTML = `<h3>Regras de Revezamento e Reserva</h3>`;
+                if (hasRotation) {
+                    rotationOutput.innerHTML += `<p><b>REVEZAMENTO:</b> Os times de "Revezamento" (3-5 jogadores) serão completados em seus jogos pelo time que estiver descansando.</p>`;
+                }
+                if (hasReserves) {
+                     rotationOutput.innerHTML += `<p><b>RESERVA:</b> Os times "Reserva" (1-2 jogadores) não participam das partidas. Os seguintes jogadores estão na reserva:</p><p><i>${reservePlayers.join(', ')}</i></p>`;
                 }
             }
+            
+            // --- 2. Controle de Partidas ---
+            function gerarPartidas() {
+                partidas = [];
+                matchList.innerHTML = '';
+                matchSelector.innerHTML = '<option value="">-- Selecione uma partida --</option>';
+                partidasListOutput.style.display = 'none';
 
-            // =========================================
-            // 3. GERENCIAMENTO DE PARTIDAS
-            // =========================================
-            function generateMatches() {
-                state.partidas = [];
-                els.matchList.innerHTML = '';
-                els.matchSelector.innerHTML = '<option value="">-- Selecione para jogar --</option>';
+                const timesAtivos = times.filter(time => time.tipo !== 'reserva');
 
-                const activeTeams = state.times.filter(t => t.tipo !== 'reserva');
-                if (activeTeams.length < 2) {
-                    els.matchList.innerHTML = '<li>Times insuficientes para gerar partidas.</li>';
+                if (timesAtivos.length < 2) {
+                    matchList.innerHTML = '<li>Times insuficientes para gerar partidas.</li>';
                     return;
                 }
 
-                // Round Robin (Todos contra todos)
-                for (let i = 0; i < activeTeams.length; i++) {
-                    for (let j = i + 1; j < activeTeams.length; j++) {
-                        const tA = activeTeams[i];
-                        const tB = activeTeams[j];
-                        state.partidas.push([tA.nome, tB.nome]);
-
-                        const label = `${tA.nome} (${tA.colorName}) vs ${tB.nome} (${tB.colorName})`;
+                for (let i = 0; i < timesAtivos.length; i++) {
+                    for (let j = i + 1; j < timesAtivos.length; j++) {
+                        const timeA = timesAtivos[i];
+                        const timeB = timesAtivos[j];
+                        partidas.push([timeA.nome, timeB.nome]); 
                         
-                        // Lista visual
+                        const partidaTexto = `${timeA.nome} (${timeA.colorName}) vs ${timeB.nome} (${timeB.colorName})`;
                         const li = document.createElement('li');
-                        li.textContent = label;
-                        els.matchList.appendChild(li);
-
-                        // Seletor do placar
-                        const opt = document.createElement('option');
-                        opt.value = `${tA.nome}|${tB.nome}`;
-                        opt.textContent = label;
-                        els.matchSelector.appendChild(opt);
+                        li.textContent = partidaTexto;
+                        matchList.appendChild(li);
+                        
+                        const option = document.createElement('option');
+                        option.value = `${timeA.nome}|${timeB.nome}`;
+                        option.textContent = partidaTexto;
+                        matchSelector.appendChild(option);
                     }
                 }
             }
 
-            // =========================================
-            // 4. PLACAR E RESULTADOS
-            // =========================================
-            let currentScore = { a: 0, b: 0 };
-
-            document.getElementById('btn-iniciar-partida').addEventListener('click', () => {
-                const val = els.matchSelector.value;
-                if (!val) return alert('Selecione uma partida!');
+            // --- 3. Contador de Pontos ---
+            let placarA = 0;
+            let placarB = 0;
+            const scoreADisplay = document.getElementById('score-a');
+            const scoreBDisplay = document.getElementById('score-b');
+            const placarTimeA = document.getElementById('placar-time-a');
+            const placarTimeB = document.getElementById('placar-time-b');
+            const btnsScore = document.querySelectorAll('.btn-score');
+            const btnFinalizar = document.getElementById('btn-finalizar-partida');
+            
+            btnIniciarPartida.addEventListener('click', () => {
+                const selectedMatch = matchSelector.value;
+                if (!selectedMatch) return alert('Por favor, selecione uma partida para iniciar.');
                 
-                const [nA, nB] = val.split('|');
-                const tA = state.times.find(t => t.nome === nA);
-                const tB = state.times.find(t => t.nome === nB);
-
-                els.nameA.textContent = `${tA.nome} (${tA.colorName})`;
-                els.nameA.style.color = tA.colorHex;
-                els.nameB.textContent = `${tB.nome} (${tB.colorName})`;
-                els.nameB.style.color = tB.colorHex;
-
-                resetScore(true); // Habilita botões
-            });
-
-            els.btnsScore.forEach(btn => btn.addEventListener('click', (e) => {
-                const side = e.target.dataset.team;
-                if (side === 'a') els.scoreA.textContent = ++currentScore.a;
-                else els.scoreB.textContent = ++currentScore.b;
-
-                if (currentScore.a >= 25 || currentScore.b >= 25) {
-                    alert('Fim de jogo! Clique em "Finalizar & Salvar".');
-                    toggleScoreBtns(false);
-                }
-            }));
-
-            els.btnFinalizar.addEventListener('click', () => {
-                if (currentScore.a === 0 && currentScore.b === 0) return alert('Placar zerado.');
+                const [timeAName, timeBName] = selectedMatch.split('|');
+                const timeA = times.find(t => t.nome === timeAName);
+                const timeB = times.find(t => t.nome === timeBName);
                 
-                const res = `Partida: ${els.nameA.textContent} vs ${els.nameB.textContent} | Placar: ${currentScore.a} - ${currentScore.b}`;
-                state.resultados.push(res);
-                saveResults();
+                placarTimeA.textContent = `${timeA.nome} (${timeA.colorName})`;
+                placarTimeA.style.color = timeA.colorHex;
+                placarTimeB.textContent = `${timeB.nome} (${timeB.colorName})`;
+                placarTimeB.style.color = timeB.colorHex;
                 
-                // Remove do seletor
-                const activeOpt = els.matchSelector.querySelector(`option[value="${els.matchSelector.value}"]`);
-                if (activeOpt) activeOpt.remove();
-
-                alert('Resultado salvo com sucesso!');
-                resetScore(false); // Reseta e desabilita
-                els.nameA.textContent = 'Time A'; els.nameA.style.color = '#fff';
-                els.nameB.textContent = 'Time B'; els.nameB.style.color = '#fff';
-                els.matchSelector.value = "";
+                resetarPlacar();
+                btnsScore.forEach(btn => btn.disabled = false);
+                // Mantém o botão de finalizar desabilitado até ter pontuação ou a partida acabar
+                btnFinalizar.disabled = false; 
             });
 
-            document.getElementById('btn-reset-placar').addEventListener('click', () => resetScore(els.nameA.textContent !== 'Time A'));
-
-            function resetScore(enable) {
-                currentScore = { a: 0, b: 0 };
-                els.scoreA.textContent = 0;
-                els.scoreB.textContent = 0;
-                toggleScoreBtns(enable);
-            }
-
-            function toggleScoreBtns(enable) {
-                els.btnsScore.forEach(b => b.disabled = !enable);
-                els.btnFinalizar.disabled = !enable;
-            }
-
-            // =========================================
-            // 5. PERSISTÊNCIA E EXPORTAÇÃO
-            // =========================================
-            function loadResults() {
-                const data = localStorage.getItem(STORAGE_KEY);
-                if (data) {
-                    state.resultados = JSON.parse(data);
-                    updateResultsView();
-                }
-            }
-            function saveResults() {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(state.resultados));
-                updateResultsView();
-            }
-            function updateResultsView() {
-                els.resultsOutput.value = state.resultados.join('\n') || 'Nenhum resultado salvo ainda.';
-            }
-            loadResults();
-
-            document.getElementById('btn-limpar-resultados').addEventListener('click', () => {
-                if (confirm('Apagar TODO o histórico de resultados?')) {
-                    state.resultados = [];
-                    localStorage.removeItem(STORAGE_KEY);
-                    updateResultsView();
-                }
-            });
-
-            // --- Copiar Listas ---
-            document.getElementById('btn-gerar-lista-times').addEventListener('click', () => {
-                if (!state.times.length) return alert('Sorteie os times primeiro.');
-                let text = state.times.map(t => 
-                    `--- ${t.nome} (${t.colorName}) ---\n` + 
-                    t.jogadores.map(p => `${p.name} (${p.gender})`).join('\n')
-                ).join('\n\n');
-                copyToClipboard(text, els.teamsListCopy);
-            });
-
-            document.getElementById('btn-gerar-lista-partidas').addEventListener('click', () => {
-                if (!state.partidas.length) return alert('Sem partidas geradas.');
-                let text = "--- ORDEM DOS JOGOS ---\n\n";
-                state.partidas.forEach((p, i) => {
-                   const tA = state.times.find(t => t.nome === p[0]);
-                   const tB = state.times.find(t => t.nome === p[1]);
-                   text += `${i+1}º Jogo: ${tA.nome} (${tA.colorName}) x ${tB.nome} (${tB.colorName})\n`;
+            btnsScore.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const time = e.target.getAttribute('data-team');
+                    if (time === 'a') scoreADisplay.textContent = ++placarA;
+                    else scoreBDisplay.textContent = ++placarB;
+                    
+                    if (placarA >= 25 || placarB >= 25) {
+                        alert('Partida finalizada! Clique em "Finalizar Partida" para salvar.');
+                        btnsScore.forEach(b => b.disabled = true); // Bloqueia apenas os pontos
+                    }
                 });
-                copyToClipboard(text, els.partidasListCopy);
             });
 
-            document.getElementById('btn-copiar-resultados').addEventListener('click', () => {
-                copyToClipboard(els.resultsOutput.value, els.resultsOutput);
+            document.getElementById('btn-reset-placar').addEventListener('click', resetarPlacar);
+            
+            btnFinalizar.addEventListener('click', () => {
+                if (placarA === 0 && placarB === 0) return alert('O placar está 0 a 0.');
+                
+                const resultadoTexto = `Partida: ${placarTimeA.textContent} vs ${placarTimeB.textContent} | Placar: ${placarA} - ${placarB}`;
+                resultadosFinais.push(resultadoTexto);
+                resultsOutput.value = resultadosFinais.join('\n');
+                saveResultsToLocalStorage();
+                
+                alert('Resultado salvo!');
+                const optionToRemove = matchSelector.querySelector(`option[value="${matchSelector.value}"]`);
+                if(optionToRemove) optionToRemove.remove();
+                
+                resetarPlacar();
+                placarTimeA.textContent = "Time A"; placarTimeA.style.color = "#e0e0e0";
+                placarTimeB.textContent = "Time B"; placarTimeB.style.color = "#e0e0e0";
+                btnsScore.forEach(btn => btn.disabled = true);
+                btnFinalizar.disabled = true;
+                matchSelector.value = "";
             });
 
-            // --- Baixar PDF ---
-            document.getElementById('btn-baixar-resumo').addEventListener('click', () => {
-                if (!window.jspdf) return alert('Erro ao carregar biblioteca PDF. Recarregue a página.');
-                if (!state.times.length && !state.resultados.length) return alert('Nada para salvar ainda.');
+            function resetarPlacar() {
+                placarA = 0; placarB = 0;
+                scoreADisplay.textContent = 0; scoreBDisplay.textContent = 0;
+                if(placarTimeA.textContent !== "Time A") btnsScore.forEach(btn => btn.disabled = false);
+            }
+            
+            // --- Utilitários de Cópia/Download/Limpar ---
+            btnLimparResultados.addEventListener('click', () => {
+                if (confirm('Tem certeza que deseja apagar permanentemente todo o histórico?')) {
+                    resultadosFinais = [];
+                    resultsOutput.value = '';
+                    localStorage.removeItem(STORAGE_KEY);
+                    alert('Histórico limpo.');
+                }
+            });
 
+            async function copyTextToClipboard(text, elementToSelect) {
+                if (navigator.clipboard && window.isSecureContext) {
+                    try { await navigator.clipboard.writeText(text); alert('Copiado!'); return; } catch (err) {}
+                }
+                elementToSelect.style.display = 'block';
+                elementToSelect.select();
+                alert('Falha na cópia automática. Copie manualmente da caixa de texto.');
+            }
+
+            btnGerarListaTimes.addEventListener('click', () => {
+                if (!times.length) return alert('Primeiro sorteie os times.');
+                let text = times.map(t => `--- ${t.nome} (${t.colorName}) ---\n${t.jogadores.join('\n')}`).join('\n\n');
+                teamsListOutput.value = text;
+                copyTextToClipboard(text, teamsListOutput);
+            });
+
+            btnGerarListaPartidas.addEventListener('click', () => {
+                if (!partidas.length) return alert('Primeiro gere as partidas.');
+                let text = "--- ORDEM DAS PARTIDAS ---\n\n" + partidas.map((p, i) => {
+                    const tA = times.find(t => t.nome === p[0]);
+                    const tB = times.find(t => t.nome === p[1]);
+                    return `Jogo ${i+1}: ${tA.nome} (${tA.colorName}) vs ${tB.nome} (${tB.colorName})`;
+                }).join('\n');
+                partidasListOutput.value = text;
+                copyTextToClipboard(text, partidasListOutput);
+            });
+
+            btnCopiarResultados.addEventListener('click', () => {
+                if (!resultsOutput.value.trim()) return alert('Não há resultados para copiar.');
+                copyTextToClipboard(resultsOutput.value, resultsOutput);
+            });
+
+            btnBaixarResumo.addEventListener('click', () => {
+                if (typeof window.jspdf === 'undefined') return alert('Erro: Biblioteca PDF não carregada.');
+                if (!times.length && !resultadosFinais.length) return alert('Não há dados para baixar.');
+                
                 const doc = new window.jspdf.jsPDF();
-                let y = 20; const margin = 15;
-                const checkPage = (h=10) => { if (y+h > 280) { doc.addPage(); y=20; }};
+                let y = 15; const margin = 10; const pageHeight = doc.internal.pageSize.height;
+                const checkPageBreak = (h=10) => { if (y+h > pageHeight-margin) { doc.addPage(); y=15; } };
 
-                doc.setFontSize(18); doc.text('Resumo do Vôlei', margin, y); y+=10;
+                doc.setFontSize(22); doc.text("Resumo do Jogo", margin, y); y+=10;
                 doc.setFontSize(10); doc.setTextColor(100);
-                doc.text(`Gerado em: ${new Date().toLocaleString()}`, margin, y); y+=15;
+                doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, margin, y); y+=15;
                 doc.setTextColor(0);
 
-                // Times
-                doc.setFontSize(14); doc.text('Times Sorteados', margin, y); y+=8;
-                doc.setFontSize(11);
-                state.times.forEach(t => {
-                    checkPage(25);
-                    doc.setTextColor(t.colorHex);
-                    doc.text(`• ${t.nome} (${t.colorName}) [${t.tipo.toUpperCase()}]`, margin, y);
-                    y+=6;
-                    doc.setTextColor(60);
-                    // Lista os jogadores com (M)/(F)
-                    const playersList = t.jogadores.map(p => `${p.name} (${p.gender})`).join(', ');
-                    const lines = doc.splitTextToSize(playersList, 180);
+                doc.setFontSize(18); doc.text("Times Sorteados", margin, y); y+=8;
+                times.forEach(t => {
+                    checkPageBreak(20);
+                    doc.setFontSize(14); doc.setTextColor(t.colorHex);
+                    doc.text(`${t.nome} (${t.colorName}) [${t.tipo}]`, margin+5, y);
+                    doc.setTextColor(0); doc.setFontSize(10); y+=6;
+                    let lines = doc.splitTextToSize(t.jogadores.join(', '), 180);
                     doc.text(lines, margin+5, y);
-                    y += (lines.length * 6) + 4;
+                    y += (lines.length*5)+5;
                 });
 
-                // Resultados
-                checkPage(30); y+=5;
-                doc.setTextColor(0); doc.setFontSize(14);
-                doc.text('Resultados Salvos', margin, y); y+=8;
+                checkPageBreak(20); y+=5;
+                doc.setFontSize(18); doc.text("Resultados Salvos", margin, y); y+=8;
                 doc.setFontSize(10);
-                if (state.resultados.length) {
-                    state.resultados.forEach(r => {
-                        checkPage(8);
-                        doc.text(r, margin, y); y+=6;
-                    });
-                } else {
-                    doc.setTextColor(150); doc.text('(Nenhum resultado registrado)', margin, y);
-                }
+                if(resultadosFinais.length) {
+                     resultadosFinais.forEach(r => { checkPageBreak(8); doc.text(r, margin+5, y); y+=6; });
+                } else { doc.text("Nenhum resultado salvo.", margin+5, y); }
 
-                doc.save(`Volei_${new Date().toISOString().slice(0,10)}.pdf`);
+                doc.save(`Resumo_Volei_${new Date().toISOString().slice(0,10)}.pdf`);
             });
 
+            function shuffleArray(array) {
+                let newArray = [...array];
+                for (let i = newArray.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+                }
+                return newArray;
+            }
+            function mudarDeAba(tabId) {
+                const target = document.querySelector(`.tab-link[data-tab="${tabId}"]`);
+                if(target) target.click();
+            }
         });
     </script>
 </body>
