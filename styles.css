@@ -1,0 +1,180 @@
+:root {
+    --bg-color: #12121e;
+    --text-color: #e0e0e0;
+    --primary: #007bff;
+    --primary-hover: #0056b3;
+    --glass-bg: rgba(255, 255, 255, 0.08);
+    --glass-border: rgba(255, 255, 255, 0.15);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 20px;
+    overflow-x: hidden; /* Evita rolagem lateral indesejada */
+}
+/* Blobs de fundo */
+body::before, body::after {
+    content: ''; position: fixed; z-index: -1; border-radius: 50%; filter: blur(100px); opacity: 0.15;
+}
+body::before { background: #9f55ff; width: 300px; height: 300px; top: -50px; left: -50px; }
+body::after { background: #008cff; width: 400px; height: 400px; bottom: -100px; right: -100px; }
+
+/* Layout Principal */
+.app-container { max-width: 900px; margin: 0 auto; }
+.glass {
+    background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+.tab-content-container { padding: 20px; margin-top: 20px; }
+
+/* --- NAVEGAÇÃO (AJUSTADA) --- */
+.tabs {
+    display: flex; /* Padrão: lado a lado */
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.tab-link {
+    flex: 0 0 auto; /* Largura natural, mais compacto */
+    padding: 10px 12px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    color: #fff;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap; /* Evita que o texto quebre em telas médias */
+}
+.tab-link.active {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+.tab-content { display: none; animation: fadeIn 0.3s ease; }
+.tab-content.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Componentes Gerais */
+h2 { margin-bottom: 20px; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+textarea, select, input {
+    width: 100%; padding: 10px; margin-top: 8px; border-radius: 8px;
+    border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: #fff; font-size: 16px;
+}
+textarea:focus, select:focus, input:focus { outline: none; border-color: var(--primary); }
+ 
+button {
+    width: auto; padding: 12px; margin-top: 12px; border: none; border-radius: 10px;
+    background: var(--primary); color: #fff; font-weight: bold; font-size: 16px;
+    cursor: pointer; transition: transform 0.2s, background 0.2s;
+}
+button:hover { background: var(--primary-hover); transform: translateY(-2px); }
+button:active { transform: translateY(0); }
+button:disabled { background: #555; cursor: not-allowed; transform: none; opacity: 0.7; }
+.btn-green { background: #2e7d32; } .btn-green:hover { background: #1b5e20; }
+.btn-red { background: #c62828; } .btn-red:hover { background: #b71c1c; }
+
+/* Grid de Gêneros (Configuração) */
+.gender-grid { display: flex; gap: 20px; }
+.gender-col { flex: 1; }
+.gender-col h3 { margin-bottom: 10px; }
+
+/* Cards de Times */
+#teams-output { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+.team-card {
+    padding: 20px; background: rgba(0,0,0,0.2); border-radius: 14px;
+    border: 2px solid var(--team-c); box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+.team-card h3 { color: var(--team-c); margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; }
+.team-card ul { list-style: none; }
+.team-card li {
+    display: flex; justify-content: space-between; padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.tag { padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
+.tag-m { background: rgba(33, 150, 243, 0.2); color: #90CAF9; }
+.tag-f { background: rgba(233, 30, 99, 0.2); color: #F48FB1; }
+.team-info {
+    margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.05);
+    border-radius: 8px; font-size: 0.9em; color: #ffd54f;
+}
+
+/* Placar */
+.scoreboard {
+    display: flex; align-items: center; justify-content: center; gap: 20px;
+    margin: 30px 0; padding: 20px; background: rgba(0,0,0,0.3); border-radius: 20px;
+}
+.score-team { text-align: center; flex: 1; }
+.score-val { font-size: 5em; font-weight: 800; margin: 15px 0; }
+.btn-score { width: 70px; height: 70px; border-radius: 50%; font-size: 2.5em; margin: 0 auto; padding: 0; display: flex; align-items: center; justify-content: center; }
+
+/* Listas e Utilitários */
+#match-list { list-style: none; max-height: 400px; overflow-y: auto; }
+#match-list li { padding: 12px; margin-bottom: 8px; background: rgba(255,255,255,0.05); border-radius: 8px; border-left: 4px solid var(--primary); }
+.copy-area { height: 1px; opacity: 0; position: absolute; }
+
+/* Cadastro e Jogadores */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+.form-grid label { font-size: 0.95em; }
+.radio-group { display: flex; gap: 10px; }
+.file-input { cursor: pointer; border: 1px dashed #546e7a; padding: 6px 10px; border-radius: 8px; }
+.players-list { display: grid; gap: 8px; }
+table.players-table { width: 100%; border-collapse: collapse; }
+table.players-table thead th { text-align: left; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.15); opacity: .9; }
+table.players-table tbody td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+table.players-table tbody tr:hover { background: rgba(255,255,255,0.06); }
+.stars { color: #FFD54F; letter-spacing: 2px; }
+.player-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 8px 10px; border-radius: 8px; }
+.player-row .nm { font-weight: 600; }
+.player-row .present { display: flex; align-items: center; gap: 6px; }
+.empty { opacity: .7; font-style: italic; }
+
+/* Placar: botão de decremento */
+.score-controls { display:flex; gap:6px; justify-content:center; }
+.btn-score-minus { background: #b71c1c; border: none; color:#fff; padding:8px 12px; border-radius:10px; cursor:pointer; }
+.btn-score-minus:disabled { opacity:.5; cursor:not-allowed; }
+
+/* ================= RESPONSIVIDADE ================= */
+@media (max-width: 768px) {
+    body { padding: 10px; }
+    .app-container { margin: 10px auto; }
+    .tab-content-container { padding: 20px 15px; }
+    
+    /* --- NAVEGAÇÃO MÓVEL (GRID 2 COLUNAS) --- */
+    .tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* Força 2 colunas exatas */
+        gap: 8px;
+    }
+    .tab-link {
+        white-space: normal; /* Permite quebrar texto se necessário em telas muito pequenas */
+        font-size: 0.9em;
+        padding: 10px 5px;
+    }
+    /* Faz o último botão (Resultados) ocupar a linha toda para ficar bonito */
+    .tab-link:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+    }
+
+    .gender-grid { flex-direction: column; gap: 15px; }
+}
+
+@media (max-width: 480px) {
+    body { padding: 0; font-size: 14px; }
+    .app-container { margin: 0; border-radius: 0; }
+    .glass { border-radius: 0; border: none; }
+    .score-val { font-size: 3.5em; }
+    .btn-score { width: 55px; height: 55px; font-size: 2em; }
+}
+/* Início: grid e cards de navegação */
+.home-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.home-card { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 12px; padding: 16px; cursor: pointer; font-size: 1.05em; }
+.home-card:hover { background: rgba(255,255,255,0.08); }
