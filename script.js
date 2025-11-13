@@ -23,7 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
         players: [], // {name, gender:'M'|'F', skill:1..5, present:boolean}
         teamStats: {}, // { teamName: { played: number, wins: number } }
         editingId: null,
-        showInactiveOnly: false
+        showActiveOnly: false,
+        resultsFilter: { date: '', page: 1, pageSize: 10 },
+        historyFilter: { page: 1, pageSize: 10 }
     };
 
     // --- Referências ---
@@ -42,6 +44,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if (changed) { try { savePlayers(); } catch(e) {} }
     }
 
+    // Normaliza nomes de cores dos times para Title Case e atualiza nome "X - Cor"
+    function normalizeTeamColors() {
+        if (!Array.isArray(STATE.teams)) return;
+        const canon = (txt) => {
+            if (!txt) return txt;
+            const t = String(txt).trim();
+            const found = CONFIG.COLORS.find(c => c.n.toLowerCase() === t.toLowerCase());
+            return found ? found.n : t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
+        };
+        STATE.teams.forEach(t => {
+            const fixed = canon(t.color);
+            if (fixed !== t.color) {
+                t.color = fixed;
+                const m = String(t.name||'').match(/^(\d+)\s*-\s*(.+)$/);
+                if (m) t.name = `${m[1]} - ${fixed}`;
+            }
+        });
+    }
+
     // --- Navegação ---
     $$('.tab-link').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -53,14 +74,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Cards da aba Início que abrem outras telas
-    $$('.home-card').forEach(card => {
-        card.addEventListener('click', () => {
-            const target = card.dataset.tabTarget;
+    // Navegação por elementos com data-tab-target (cards e botões)
+    document.querySelectorAll('[data-tab-target]').forEach(el => {
+        el.addEventListener('click', () => {
+            const target = el.dataset.tabTarget;
             const navBtn = Array.from($$('.tab-link')).find(b => b.dataset.tab === target);
             if (navBtn) navBtn.click();
         });
     });
+
+    // Toasts amigáveis e não bloqueantes
+    function showToast(message, type = 'info', timeout = 3000) {
+        const cont = $('toast-container'); if (!cont) { console.log(message); return; }
+        const el = document.createElement('div');
+        el.className = `toast ${type}`;
+        el.innerHTML = `<span>${message}</span><span class="close">✖</span>`;
+        cont.appendChild(el);
+        const remove = () => { el.style.animation = 'fadeOut .2s ease-out'; setTimeout(()=>{ el.remove(); }, 180); };
+        el.querySelector('.close').addEventListener('click', remove);
+        setTimeout(remove, timeout);
+    }
 
     // =========================================
     // IndexedDB: banco local
@@ -69,14 +102,23 @@ document.addEventListener('DOMContentLoaded', () => {
         db: null,
         open() {
             return new Promise((resolve, reject) => {
-                const req = indexedDB.open('volei_db', 2);
+                const req = indexedDB.open('volei_db', 3);
                 req.onupgradeneeded = (e) => {
                     const db = e.target.result;
                     try { if (db.objectStoreNames.contains('players')) db.deleteObjectStore('players'); } catch(err) {}
                     db.createObjectStore('players', { keyPath: 'id' });
                     if (!db.objectStoreNames.contains('sessions')) db.createObjectStore('sessions', { keyPath: 'date' });
+                    if (!db.objectStoreNames.contains('results')) db.createObjectStore('results', { keyPath: 'id', autoIncrement: true });
                 };
                 req.onsuccess = () => { DB.db = req.result; resolve(DB.db); };
+                req.onerror = () => reject(req.error);
+            });
+        },
+        add(store, val) {
+            return new Promise((resolve, reject) => {
+                const tx = DB.db.transaction(store, 'readwrite');
+                const req = tx.objectStore(store).add(val);
+                req.onsuccess = () => resolve(req.result);
                 req.onerror = () => reject(req.error);
             });
         },
@@ -131,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
             STATE.matches = sess.matches || STATE.matches;
             STATE.teams = sess.teams || STATE.teams;
         }
+        normalizeTeamColors();
         return sess;
     }
 
@@ -169,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.warn('Supabase erro ao conectar:', error);
                 setSupabaseStatus('erro de conexão');
                 SUPABASE.online = false;
-                alert('Falha ao conectar ao Supabase. Verifique URL/anon key e se as tabelas existem.');
+                showToast('Falha ao conectar ao Supabase. Verifique configuração.', 'error', 4500);
                 return false;
             }
             SUPABASE.online = true;
@@ -229,7 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   : (m[1]==='active')
                     ? "ALTER TABLE public.players ADD COLUMN IF NOT EXISTS active boolean DEFAULT true;"
                     : `ALTER TABLE public.players ADD COLUMN IF NOT EXISTS ${m[1]} timestamptz DEFAULT now();`;
-                alert(`Coluna '${m[1]}' ausente em 'players'.\nExecute no Supabase Studio (SQL):\n\n${fix}`);
+                showToast(`Coluna '${m[1]}' ausente em 'players'. Verifique no Supabase Studio.`, 'error', 5000);
             }
             return false;
         }
@@ -270,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const m = msg.match(/Could not find the '(\w+)' column/);
             if (m && !SUPABASE.warnedMissing.has(m[1])) {
                 SUPABASE.warnedMissing.add(m[1]);
-                alert(`A coluna '${m[1]}' não existe na tabela 'sessions'.\nExecute no Supabase Studio (SQL):\n\nALTER TABLE public.sessions ADD COLUMN IF NOT EXISTS ${m[1]} jsonb;`);
+                showToast(`Coluna '${m[1]}' ausente em 'sessions'. Ajuste via Supabase Studio.`, 'error', 5000);
             }
             return false;
         }
@@ -331,7 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderPlayersList();
     }
     function addPlayer(name, gender, skill) {
-        if (!name || !gender || !skill) return alert('Preencha nome, sexo e habilidade.');
+        if (!name || !gender || !skill) return showToast('Preencha nome, sexo e habilidade.', 'error');
         const active = !!$('player-active')?.checked;
         STATE.players.push({ id: genId(), name: name.trim(), gender, skill: Number(skill), present: false, active, createdAt: new Date().toISOString() });
         savePlayers();
@@ -340,10 +383,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('input[name="player-gender"][value="F"]').checked = false;
         $('player-skill').value = '3';
         const ac = $('player-active'); if (ac) ac.checked = true;
-        alert('Jogador adicionado!');
+        showToast('Jogador adicionado!', 'success');
     }
     function upsertPlayer(name, gender, skill) {
-        if (!name || !gender || !skill) return alert('Preencha nome, sexo e habilidade.');
+        if (!name || !gender || !skill) return showToast('Preencha nome, sexo e habilidade.', 'error');
         if (STATE.editingId) {
             const idx = STATE.players.findIndex(p=>p.id===STATE.editingId);
             if (idx>=0) {
@@ -362,7 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
             $('player-skill').value = '3';
             const ac = $('player-active'); if (ac) ac.checked = true;
             savePlayers();
-            alert('Jogador salvo!');
+            showToast('Jogador salvo!', 'success');
             // Após salvar, retornar à aba Jogadores para visualizar mudanças
             const navBtn = Array.from($$('.tab-link')).find(b => b.dataset.tab === 'jogadores');
             if (navBtn) navBtn.click();
@@ -385,14 +428,9 @@ document.addEventListener('DOMContentLoaded', () => {
         root.innerHTML = '';
         const q = (($('player-search')?.value)||'').trim().toLowerCase();
         const players = [...STATE.players]
-            .filter(p=> STATE.showInactiveOnly ? (p.active===false) : (p.active!==false))
+            .filter(p=> STATE.showActiveOnly ? (p.active!==false) : true)
             .filter(p=>!q || p.name.toLowerCase().includes(q))
-            .sort((a,b)=>{
-                const g = a.gender.localeCompare(b.gender);
-                if (g!==0) return g;
-                const s = b.skill - a.skill; if (s!==0) return s;
-                return a.name.localeCompare(b.name);
-            });
+            .sort((a,b)=> a.name.localeCompare(b.name));
         const table = document.createElement('table');
         table.className = 'players-table';
         const thead = document.createElement('thead');
@@ -403,7 +441,12 @@ document.addEventListener('DOMContentLoaded', () => {
         players.forEach(p=>{
             const tr = document.createElement('tr');
             const tdName = document.createElement('td'); tdName.textContent = p.name; tr.appendChild(tdName);
-            const tdGender = document.createElement('td'); tdGender.textContent = (p.gender==='M'?'Masculino':'Feminino'); tr.appendChild(tdGender);
+            const tdGender = document.createElement('td');
+            const gSpan = document.createElement('span');
+            gSpan.className = 'tag ' + (p.gender==='M' ? 'tag-m' : 'tag-f');
+            gSpan.textContent = (p.gender==='M' ? 'M' : 'F');
+            tdGender.appendChild(gSpan);
+            tr.appendChild(tdGender);
             const tdSkill = document.createElement('td');
             const stars = '★'.repeat(Math.max(0, Math.min(5, Number(p.skill)||0))) + '☆'.repeat(Math.max(0, 5 - (Number(p.skill)||0)));
             const span = document.createElement('span'); span.className = 'stars'; span.textContent = stars; tdSkill.appendChild(span); tr.appendChild(tdSkill);
@@ -436,8 +479,8 @@ document.addEventListener('DOMContentLoaded', () => {
     $('player-search')?.addEventListener('input', () => {
         renderPlayersList();
     });
-    $('toggle-inativos')?.addEventListener('change', () => {
-        STATE.showInactiveOnly = !!$('toggle-inativos')?.checked;
+    $('toggle-ativos')?.addEventListener('change', () => {
+        STATE.showActiveOnly = !!$('toggle-ativos')?.checked;
         renderPlayersList();
     });
     // botão de ação em massa removido
@@ -556,7 +599,9 @@ $('btn-sortear').addEventListener('click', async () => {
         // Persistir times do dia
         saveSessionField('teams', STATE.teams);
         if (SUPABASE.online) { saveSessionFieldRemote('teams', STATE.teams).catch(()=>{}); }
-        $$('.tab-link')[2].click(); // Vai para aba Times (ajustado por novas abas)
+        // Navega para a aba de Times para exibir os sorteados
+        const navBtn = Array.from($$('.tab-link')).find(b => b.dataset.tab === 'times');
+        if (navBtn) navBtn.click();
     });
 
     function createTeam(id, players, type) {
@@ -586,7 +631,7 @@ $('btn-sortear').addEventListener('click', async () => {
             <div class="team-card" style="--team-c: ${t.hex}">
                 <h3>${t.name}</h3>
                 <ul>
-                    ${t.players.map(p => `
+                    ${t.players.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(p => `
                         <li>
                             <span>${p.name}</span>
                             <span class="tag tag-${p.gender.toLowerCase()}">${p.gender}</span>
@@ -623,28 +668,52 @@ $('btn-sortear').addEventListener('click', async () => {
         sel.innerHTML = '<option value="">-- Selecione --</option>';
         if (playTeams.length < 2) return;
 
-        // Duplo round-robin para garantir >=2 jogos
-        const pairs = [];
-        for(let rr=0; rr<2; rr++) {
-            for(let i=0; i<playTeams.length; i++) {
-                for(let j=i+1; j<playTeams.length; j++) {
-                    pairs.push([playTeams[i], playTeams[j]]);
-                }
+        // Alvo: 3 jogos por time; intercalar para não passar de 2 seguidos
+        const targetPerTeam = 3;
+        const played = new Map(playTeams.map(t=>[t.name,0]));
+        const consec = new Map(playTeams.map(t=>[t.name,0]));
+
+        // pares únicos base
+        let basePairs = [];
+        for (let i=0;i<playTeams.length;i++) {
+            for (let j=i+1;j<playTeams.length;j++) {
+                basePairs.push([playTeams[i], playTeams[j]]);
             }
         }
-        // Reordena para evitar >2 seguidas
+        // Se necessário, duplica pares para atingir a meta de jogos
+        const totalNeeded = Math.ceil((playTeams.length * targetPerTeam) / 2);
+        let pairs = [...basePairs];
+        let k = 0;
+        while (pairs.length < totalNeeded) {
+            pairs.push(basePairs[k % basePairs.length]);
+            k++;
+        }
+
         const schedule = [];
-        const consec = new Map(playTeams.map(t=>[t.name,0]));
-        const played = new Map(playTeams.map(t=>[t.name,0]));
-        while (pairs.length) {
-            let idx = pairs.findIndex(([a,b]) => consec.get(a.name) < 2 && consec.get(b.name) < 2);
-            if (idx === -1) idx = 0;
+        // Greedy: escolhe próximo par que respeita limites e ainda precisa jogar
+        while (schedule.length < totalNeeded && pairs.length) {
+            let idx = pairs.findIndex(([a,b]) => {
+                const aName = a.name, bName = b.name;
+                if (played.get(aName) >= targetPerTeam || played.get(bName) >= targetPerTeam) return false;
+                if (consec.get(aName) >= 2 || consec.get(bName) >= 2) return false;
+                return true;
+            });
+            if (idx === -1) {
+                // relaxa restrição consecutiva se travar
+                idx = pairs.findIndex(([a,b]) => played.get(a.name) < targetPerTeam && played.get(b.name) < targetPerTeam);
+                if (idx === -1) break;
+            }
             const [a,b] = pairs.splice(idx,1)[0];
             schedule.push([a.name, b.name]);
-            // atualiza consecutivos
-            playTeams.forEach(t=>consec.set(t.name, t.name===a.name||t.name===b.name ? consec.get(t.name)+1 : 0));
-            playTeams.forEach(t=>played.set(t.name, played.get(t.name) + (t.name===a.name||t.name===b.name ? 1 : 0)));
+            // atualiza contagens
+            playTeams.forEach(t=>{
+                const nm = t.name;
+                const isPlaying = (nm===a.name || nm===b.name);
+                consec.set(nm, isPlaying ? consec.get(nm)+1 : 0);
+                played.set(nm, played.get(nm) + (isPlaying ? 1 : 0));
+            });
         }
+
         STATE.matches = schedule;
         // Persistir jogos do dia
         saveSessionField('matches', STATE.matches);
@@ -688,7 +757,7 @@ $('btn-sortear').addEventListener('click', async () => {
         updateScore();
         if (STATE.score.a >= CONFIG.WIN_SCORE || STATE.score.b >= CONFIG.WIN_SCORE) {
             setMatchState('finished');
-            alert('Fim de jogo! Clique em Finalizar.');
+            showToast('Fim de jogo! Clique em "Finalizar".', 'info', 3500);
         }
     }));
     $$('.btn-score-minus').forEach(btn => btn.addEventListener('click', e => {
@@ -702,13 +771,32 @@ $('btn-sortear').addEventListener('click', async () => {
         if (STATE.score.a === 0 && STATE.score.b === 0) return alert('Placar zerado!');
         const res = `[${new Date().toLocaleTimeString()}] ${$('team-a-name').textContent} (${STATE.score.a}) x (${STATE.score.b}) ${$('team-b-name').textContent}`;
         STATE.results.unshift(res);
+        // salva linha detalhada em IndexedDB e Supabase
+        const resultRow = {
+            date: new Date().toISOString().split('T')[0],
+            time: new Date().toLocaleTimeString(),
+            teamA: $('team-a-name').textContent,
+            teamB: $('team-b-name').textContent,
+            scoreA: STATE.score.a,
+            scoreB: STATE.score.b,
+            winner: (STATE.score.a > STATE.score.b) ? $('team-a-name').textContent : $('team-b-name').textContent
+        };
+        try { if (DB.db) DB.add('results', resultRow).catch(()=>{}); } catch(e) {}
+        (async ()=>{
+            try {
+                if (SUPABASE.online && SUPABASE.client) {
+                    const { error } = await SUPABASE.client.from('results').insert([resultRow]);
+                    if (error) console.warn('Supabase insert results error:', error);
+                }
+            } catch(e) { console.warn('Supabase insert results exception:', e); }
+        })();
         // atualiza estatísticas
         const ta = $('team-a-name').textContent;
         const tb = $('team-b-name').textContent;
         bumpTeamStats(ta, tb, STATE.score);
         saveData();
         
-        alert('Salvo!');
+        showToast('Resultado salvo!', 'success');
         setMatchState('idle');
         $('match-selector').querySelector(`option[value="${$('match-selector').value}"]`)
           ?.remove();
@@ -718,6 +806,7 @@ $('btn-sortear').addEventListener('click', async () => {
         STATE.score = {a:0, b:0};
         STATE.currentMatchTeams = null;
         updateScore();
+        try { renderResultsTable(); } catch(e) {}
     });
 
     $('btn-reset-score').addEventListener('click', () => {
@@ -743,7 +832,6 @@ $('btn-sortear').addEventListener('click', async () => {
     // =========================================
     function saveData() {
         localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(STATE.results));
-        $('results-log').value = STATE.results.join('\n') || '--- Histórico vazio ---';
         // Persistir resultados e estatísticas
         saveSessionField('results', STATE.results);
         saveSessionField('teamStats', STATE.teamStats);
@@ -751,6 +839,8 @@ $('btn-sortear').addEventListener('click', async () => {
             try { saveSessionFieldRemote('results', STATE.results); } catch(e) {}
             try { saveSessionFieldRemote('teamStats', STATE.teamStats); } catch(e) {}
         }
+        // Atualiza a tabela de histórico
+        try { renderResultsTable(); } catch(e) {}
     }
     async function loadData() {
         const d = localStorage.getItem(CONFIG.STORAGE_KEY);
@@ -771,59 +861,264 @@ $('btn-sortear').addEventListener('click', async () => {
     }
 
     async function copyText(text) {
-        try { await navigator.clipboard.writeText(text); alert('Copiado!'); }
+        try { await navigator.clipboard.writeText(text); showToast('Copiado para a área de transferência.', 'success'); }
         catch (e) { 
             $('clipboard-helper').value = text; $('clipboard-helper').select();
-            document.execCommand('copy'); alert('Copiado (modo manual)!');
+            document.execCommand('copy'); showToast('Copiado (modo compatibilidade).', 'success');
         }
     }
 
     $('btn-copy-teams').onclick = () => copyText(STATE.teams.map(t => `[${t.name}]\n${t.players.map(p=>p.name).join(', ')}`).join('\n\n') || 'Nada para copiar.');
     $('btn-copy-matches').onclick = () => copyText(STATE.matches.map((m,i)=>`${i+1}. ${m[0]} x ${m[1]}`).join('\n') || 'Nada para copiar.');
-    $('btn-copy-results').onclick = () => copyText($('results-log').value);
-    $('btn-clear-results').onclick = () => { if(confirm('Apagar tudo?')) { STATE.results=[]; saveData(); }};
+    async function getResultsRows() {
+        // Tenta obter registros detalhados do IndexedDB; se vazio, faz fallback em STATE.results
+        let rows = [];
+        try { if (DB.db) rows = await DB.getAll('results'); } catch(e) {}
+        if (!rows || !rows.length) {
+            rows = (STATE.results||[]).map(r => {
+                const m = r.match(/^\[(.+?)\]\s(.+?)\s\((\d+)\)\sx\s\((\d+)\)\s(.+)$/);
+                if (!m) return null;
+                return { date: todayKey(), time: m[1], teamA: m[2], scoreA: Number(m[3]), scoreB: Number(m[4]), teamB: m[5], winner: (Number(m[3])>Number(m[4]))?m[2]:m[5] };
+            }).filter(Boolean);
+        }
+        // filtros
+        const f = STATE.resultsFilter;
+        const dd = f.date || '';
+        if (dd) rows = rows.filter(r => String(r.date) === dd);
+        // ordena por hora, decrescente
+        rows.sort((a,b)=>String(b.time).localeCompare(String(a.time)));
+        return rows;
+    }
+    async function renderResultsTable() {
+        const el = $('results-table'); if (!el) return;
+        const tbody = el.querySelector('tbody'); if (!tbody) return;
+        const rows = await getResultsRows();
+        // paginação
+        const pgSize = Number(STATE.resultsFilter.pageSize)||10;
+        const total = rows.length;
+        const totalPages = Math.max(1, Math.ceil(total / pgSize));
+        STATE.resultsFilter.page = Math.min(Math.max(1, STATE.resultsFilter.page), totalPages);
+        const start = (STATE.resultsFilter.page - 1) * pgSize;
+        const pageRows = rows.slice(start, start + pgSize);
+        tbody.innerHTML = pageRows.map(r => `<tr><td>${r.time}</td><td>${r.teamA}</td><td>${r.scoreA} x ${r.scoreB}</td><td>${r.teamB}</td><td>${r.winner}</td></tr>`).join('') || '<tr><td colspan="5" style="opacity:.7">(Sem resultados)</td></tr>';
+        const pi = $('page-info'); if (pi) pi.textContent = `Página ${STATE.resultsFilter.page} de ${totalPages}`;
+        const prev = $('page-prev'); const next = $('page-next');
+        if (prev) prev.disabled = (STATE.resultsFilter.page <= 1);
+        if (next) next.disabled = (STATE.resultsFilter.page >= totalPages);
+        // seletor de times e campo de busca removidos conforme solicitado
+    }
 
-    $('btn-download-pdf').onclick = () => {
-        if (!window.jspdf || (!STATE.teams.length && !STATE.results.length)) return alert('Nada para gerar PDF.');
-        const doc = new window.jspdf.jsPDF();
-        let y = 20;
-        const checkY = (h=10) => { if(y+h>280) { doc.addPage(); y=20; }};
-        
-        doc.setFontSize(18); doc.text('Resumo do Vôlei', 10, y); y+=10;
-        doc.setFontSize(10); doc.setTextColor(100); doc.text(new Date().toLocaleString(), 10, y); y+=15;
-        
-        doc.setTextColor(0); doc.setFontSize(14); doc.text('Times:', 10, y); y+=8;
-        doc.setFontSize(11);
-        STATE.teams.forEach(t => {
-            checkY(20);
-            doc.setTextColor(t.hex); doc.text(`• ${t.name} (${t.color})`, 10, y); y+=6;
-            doc.setTextColor(60);
-            const pList = t.players.map(p => `${p.name} (${p.gender})`).join(', ');
-            const lines = doc.splitTextToSize(pList, 180);
-            doc.text(lines, 15, y); y += (lines.length*5)+4;
+    async function getHistoryRows() {
+        let rows = [];
+        try { if (DB.db) rows = await DB.getAll('results'); } catch(e) {}
+        if (!rows || !rows.length) {
+            rows = (STATE.results||[]).map(r => {
+                const m = r.match(/^\[(.+?)\]\s(.+?)\s\((\d+)\)\sx\s\((\d+)\)\s(.+)$/);
+                if (!m) return null;
+                return { date: todayKey(), time: m[1], teamA: m[2], scoreA: Number(m[3]), scoreB: Number(m[4]), teamB: m[5], winner: (Number(m[3])>Number(m[4]))?m[2]:m[5] };
+            }).filter(Boolean);
+        }
+        const today = todayKey();
+        rows = rows.filter(r => String(r.date) !== today);
+        // ordena por data e hora, decrescente
+        rows.sort((a,b)=>{
+            const d = String(b.date).localeCompare(String(a.date));
+            if (d!==0) return d;
+            return String(b.time).localeCompare(String(a.time));
         });
+        return rows;
+    }
 
-        checkY(30); y+=10;
-        doc.setTextColor(0); doc.setFontSize(14); doc.text('Resultados:', 10, y); y+=8;
-        doc.setFontSize(10);
-        if(STATE.results.length) STATE.results.forEach(r => { checkY(6); doc.text(r, 10, y); y+=6; });
-        else { doc.setTextColor(150); doc.text('(Sem resultados)', 10, y); }
+    async function renderHistoryTable() {
+        const el = $('history-table'); if (!el) return;
+        const tbody = el.querySelector('tbody'); if (!tbody) return;
+        const rows = await getHistoryRows();
+        const pgSize = Number(STATE.historyFilter.pageSize)||10;
+        const total = rows.length;
+        const totalPages = Math.max(1, Math.ceil(total / pgSize));
+        STATE.historyFilter.page = Math.min(Math.max(1, STATE.historyFilter.page), totalPages);
+        const start = (STATE.historyFilter.page - 1) * pgSize;
+        const pageRows = rows.slice(start, start + pgSize);
+        tbody.innerHTML = pageRows.map(r => `<tr><td>${r.date}</td><td>${r.time}</td><td>${r.teamA}</td><td>${r.scoreA} x ${r.scoreB}</td><td>${r.teamB}</td><td>${r.winner}</td></tr>`).join('') || '<tr><td colspan="6" style="opacity:.7">(Sem resultados anteriores)</td></tr>';
+        const pi = $('history-page-info'); if (pi) pi.textContent = `Página ${STATE.historyFilter.page} de ${totalPages}`;
+        const prev = $('history-page-prev'); const next = $('history-page-next');
+        if (prev) prev.disabled = (STATE.historyFilter.page <= 1);
+        if (next) next.disabled = (STATE.historyFilter.page >= totalPages);
+    }
+    $('btn-copy-results').onclick = async () => {
+        const rows = await getResultsRows();
+        const text = rows.map(r => `[${r.time}] ${r.teamA} (${r.scoreA}) x (${r.scoreB}) ${r.teamB}`).join('\n');
+        copyText(text || '--- Histórico vazio ---');
+    };
+    $('btn-clear-results').onclick = async () => {
+        if(!confirm('Apagar histórico?')) return;
+        STATE.results = [];
+        try { if (DB.db) await DB.clear('results'); } catch(e) {}
+        saveData();
+    };
 
-        // Estatísticas por time e pódio
-        checkY(20); y+=10;
-        doc.setTextColor(0); doc.setFontSize(14); doc.text('Estatísticas:', 10, y); y+=8;
-        doc.setFontSize(10);
-        const statsEntries = Object.entries(STATE.teamStats);
-        statsEntries.forEach(([name, st]) => { checkY(6); doc.text(`${name}: ${st.played} jogos, ${st.wins} vitórias`, 10, y); y+=6; });
-        checkY(20); y+=10;
-        doc.setTextColor(0); doc.setFontSize(14); doc.text('Pódio:', 10, y); y+=8;
-        const podium = statsEntries.sort((a,b)=>b[1].wins-a[1].wins);
-        doc.setFontSize(10);
-        podium.forEach(([name, st], i) => { checkY(6); doc.text(`${i+1}. ${name} - ${st.wins} vitórias`, 10, y); y+=6; });
+    // Sincronização manual com Banco
+    $('btn-sync-db')?.addEventListener('click', async () => {
+        const rows = await getResultsRows();
+        if (!rows.length) return showToast('Sem resultados para sincronizar.', 'info');
+        if (!SUPABASE.online || !SUPABASE.client) return showToast('Banco offline. Configure o Supabase.', 'error');
+        let ok = 0, fail = 0;
+        for (const r of rows) {
+            try {
+                const { error } = await SUPABASE.client.from('results').insert([r]);
+                if (error) { console.warn('Insert error:', error); fail++; }
+                else ok++;
+            } catch(e) { console.warn('Insert exception:', e); fail++; }
+        }
+        if (fail === 0) showToast(`Sincronização concluída: ${ok} registro(s) enviados.`, 'success');
+        else showToast(`Sincronização concluída com erros. Sucesso: ${ok}, Falhas: ${fail}.`, 'error');
+    });
+
+    $('btn-download-pdf').onclick = async () => {
+        if (!window.jspdf || (!STATE.teams.length && !STATE.results.length)) return showToast('Nada para gerar PDF.', 'info');
+        const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+        const page = { w: 210, h: 297, margin: 10 };
+        let y = page.margin;
+        const checkY = (h=10) => { if(y+h>page.h - page.margin) { doc.addPage(); y=page.margin; }};
+
+        const hexToRgb = (hex) => {
+            const c = (hex||'#9e9e9e').replace('#','');
+            const n = parseInt(c.length===3 ? c.split('').map(x=>x+x).join('') : c, 16);
+            return { r: (n>>16)&255, g: (n>>8)&255, b: n&255 };
+        };
+        const contrastText = (hex) => {
+            const {r,g,b} = hexToRgb(hex);
+            const luminance = (0.299*r + 0.587*g + 0.114*b);
+            return luminance > 140 ? {r:20,g:20,b:20} : {r:255,g:255,b:255};
+        };
+        const getTeamHex = (name) => {
+            const t = STATE.teams.find(tt => tt.name === name);
+            return t ? (t.hex||'#607d8b') : '#9e9e9e';
+        };
+        const divider = (topGap = 6, bottomGap = 5) => {
+            // adiciona espaço antes e depois da linha para evitar cortar textos
+            y += topGap;
+            doc.setDrawColor(200);
+            doc.setLineWidth(0.3);
+            doc.line(page.margin, y, page.w - page.margin, y);
+            y += bottomGap;
+            doc.setDrawColor(0);
+        };
+
+        // Cabeçalho estilizado
+        doc.setFillColor(18,18,30); doc.roundedRect(page.margin, y, page.w - page.margin*2, 20, 3, 3, 'F');
+        doc.setTextColor(255); doc.setFontSize(14);
+        doc.text(`Resultados finais - Vôlei - ${new Date().toLocaleString()}`, page.margin+5, y+12);
+        y += 26;
+
+        // Grid de Times Formados (3 colunas, espaçamento vertical 5)
+        doc.setTextColor(30); doc.setFontSize(13); doc.text('Times Formados', page.margin, y); y += 6;
+        const cols = 3; const hGap = 4; const vGap = 5;
+        const cardW = (page.w - page.margin*2 - hGap*(cols-1)) / cols;
+        let colIndex = 0; let currentRowMaxH = 0; let rowStartY = y;
+        STATE.teams.forEach((t, idx) => {
+            const cx = page.margin + colIndex * (cardW + hGap);
+            const cy = rowStartY;
+            const rgb = hexToRgb(t.hex||'#607d8b');
+            doc.setDrawColor(rgb.r, rgb.g, rgb.b);
+            // calcula altura dinâmica do card com jogadores linha a linha
+            const titleH = 8; const lineH = 4; const pad = 4;
+            const cardH = Math.max(12, pad + titleH + (t.players.length * lineH) + pad);
+            checkY(cardH);
+            doc.roundedRect(cx, cy, cardW, cardH, 2, 2, 'S');
+            doc.setTextColor(30);
+            doc.setFontSize(10); doc.text(`${t.name}`, cx+4, cy+6);
+            doc.setFontSize(7);
+            let py = cy + 10;
+            t.players.slice().sort((a,b)=>a.name.localeCompare(b.name)).forEach(p => {
+                const name = p.name; const sex = p.gender || '';
+                doc.text(name, cx+4, py);
+                const sexW = doc.getTextWidth(sex);
+                doc.text(sex, cx + cardW - 4 - sexW, py);
+                py += lineH;
+            });
+            currentRowMaxH = Math.max(currentRowMaxH, cardH);
+            colIndex++;
+            if (colIndex === cols) {
+                rowStartY += currentRowMaxH + vGap;
+                y = rowStartY;
+                colIndex = 0;
+                currentRowMaxH = 0;
+            }
+        });
+        if (colIndex !== 0) { rowStartY += currentRowMaxH + vGap; y = rowStartY; }
+        y += 2;
+        divider();
+
+        // Tabela de Partidas Jogadas (Todas)
+        doc.setTextColor(30); doc.setFontSize(13); doc.text('Partidas Jogadas (Todas)', page.margin, y); y += 6;
+        doc.setFillColor(235,235,235); doc.rect(page.margin, y, page.w - page.margin*2, 6, 'F');
+        doc.setTextColor(0); doc.setFontSize(8);
+        doc.text('Data', page.margin+2, y+4); doc.text('Hora', page.margin+22, y+4); doc.text('Time A', page.margin+38, y+4); doc.text('Placar', page.margin+92, y+4); doc.text('Time B', page.margin+112, y+4); doc.text('Vencedor', page.margin+160, y+4);
+        // aumenta o espaço após header para não sobrepor primeira linha da tabela
+        y += 9;
+        let rowsAll = [];
+        try { if (DB.db) rowsAll = await DB.getAll('results'); } catch(e) {}
+        if (!rowsAll || !rowsAll.length) {
+            const todayRows = await getResultsRows(); const histRows = await getHistoryRows();
+            rowsAll = [...todayRows, ...histRows];
+        }
+        rowsAll.sort((a,b)=> String(b.date).localeCompare(String(a.date)) || String(b.time).localeCompare(String(a.time)) );
+        if (rowsAll.length) {
+            rowsAll.forEach(r => {
+                checkY(7);
+                doc.setFontSize(8);
+                const aRgb = hexToRgb(getTeamHex(r.teamA)); const bRgb = hexToRgb(getTeamHex(r.teamB)); const wRgb = hexToRgb(getTeamHex(r.winner));
+                doc.setTextColor(30); doc.text(`${r.date}`, page.margin+2, y);
+                doc.setTextColor(30); doc.text(`${r.time}`, page.margin+22, y);
+                doc.setTextColor(aRgb.r, aRgb.g, aRgb.b); doc.text(`${r.teamA}`, page.margin+38, y);
+                doc.setTextColor(30); doc.text(`${r.scoreA} x ${r.scoreB}`, page.margin+92, y);
+                doc.setTextColor(bRgb.r, bRgb.g, bRgb.b); doc.text(`${r.teamB}`, page.margin+112, y);
+                doc.setTextColor(wRgb.r, wRgb.g, wRgb.b); doc.text(`${r.winner}`, page.margin+160, y);
+                y += 6;
+            });
+        } else {
+            doc.setTextColor(120); doc.text('(Sem partidas registradas)', page.margin+2, y);
+            y += 8;
+        }
+        // separa visualmente da próxima seção com margem maior
+        divider(8,6);
+
+        // Pódio dos 3 melhores times (final da página)
+        const neededH = 40;
+        if (page.h - page.margin - y > neededH) {
+            y = page.h - page.margin - neededH;
+        } else {
+            checkY(neededH);
+        }
+        doc.setTextColor(30); doc.setFontSize(13); doc.text('Pódio • Top 3', page.margin, y); y += 10;
+        const stats = Object.entries(STATE.teamStats).map(([name, s]) => ({ name, played: s.played||0, wins: s.wins||0, hex: getTeamHex(name) }));
+        stats.sort((a,b)=> b.wins - a.wins || b.played - a.played || a.name.localeCompare(b.name));
+        const podium = stats.slice(0,3);
+        const baseX = page.margin; const pad = 6; const w1 = 60, w2 = 55, w3 = 50; const h1 = 26, h2 = 22, h3 = 18;
+        const medalColors = { '1º':'#FFD700', '2º':'#C0C0C0', '3º':'#CD7F32' };
+        const drawBlock = (x, width, height, item, label) => {
+            const rgb = hexToRgb(medalColors[label]||'#9e9e9e');
+            doc.setFillColor(rgb.r, rgb.g, rgb.b);
+            doc.roundedRect(x, y, width, height, 2, 2, 'F');
+            doc.setTextColor(20); doc.setFontSize(11);
+            doc.text(`${label} • ${item.name}`, x+4, y+8);
+            doc.setFontSize(9);
+            doc.text(`Vitórias: ${item.wins} • Jogos: ${item.played}`, x+4, y+15);
+        };
+        if (podium.length) {
+            drawBlock(baseX, w2, h2, podium[1]||podium[0]||{name:'—',wins:0,played:0,hex:'#bdbdbd'}, '2º');
+            drawBlock(baseX + w2 + pad, w1, h1, podium[0]||{name:'—',wins:0,played:0,hex:'#bdbdbd'}, '1º');
+            drawBlock(baseX + w2 + pad + w1 + pad, w3, h3, podium[2]||{name:'—',wins:0,played:0,hex:'#bdbdbd'}, '3º');
+            y += h1 + 10;
+        } else {
+            doc.setTextColor(120); doc.text('(Sem estatísticas para pódio)', page.margin, y);
+            y += 8;
+        }
 
         doc.save(`Volei_${new Date().toISOString().split('T')[0]}.pdf`);
-
-        // Limpa TXT e resultados do dia após imprimir
+        
+        // Mantém comportamento atual de limpar TXT e resultados do dia
         localStorage.setItem(CONFIG.DAILY_TXT_KEY, '');
         STATE.results = [];
         saveData();
@@ -852,6 +1147,17 @@ $('btn-sortear').addEventListener('click', async () => {
         try { await DB.open(); } catch(e) {}
         await loadPlayers();
         await loadData();
+        try { await renderResultsTable(); } catch(e) {}
+        try { await renderHistoryTable(); } catch(e) {}
+        // inicializa filtros
+        const d = $('filter-date'); if (d) { d.value = todayKey(); STATE.resultsFilter.date = d.value; d.addEventListener('change', ()=>{ STATE.resultsFilter.date = d.value; STATE.resultsFilter.page = 1; }); }
+        const ps = $('filter-page-size'); if (ps) { ps.addEventListener('change', ()=>{ STATE.resultsFilter.pageSize = Number(ps.value)||10; STATE.resultsFilter.page = 1; }); }
+        const go = $('btn-apply-filters'); if (go) { go.addEventListener('click', ()=>{ renderResultsTable(); }); }
+        const prev = $('page-prev'); if (prev) { prev.addEventListener('click', ()=>{ STATE.resultsFilter.page = Math.max(1, STATE.resultsFilter.page-1); renderResultsTable(); }); }
+        const next = $('page-next'); if (next) { next.addEventListener('click', ()=>{ STATE.resultsFilter.page = STATE.resultsFilter.page+1; renderResultsTable(); }); }
+        const hps = $('history-page-size'); if (hps) { hps.addEventListener('change', ()=>{ STATE.historyFilter.pageSize = Number(hps.value)||10; STATE.historyFilter.page = 1; renderHistoryTable(); }); }
+        const hprev = $('history-page-prev'); if (hprev) { hprev.addEventListener('click', ()=>{ STATE.historyFilter.page = Math.max(1, STATE.historyFilter.page-1); renderHistoryTable(); }); }
+        const hnext = $('history-page-next'); if (hnext) { hnext.addEventListener('click', ()=>{ STATE.historyFilter.page = STATE.historyFilter.page+1; renderHistoryTable(); }); }
     })();
 
     // =============================
@@ -870,7 +1176,7 @@ $('btn-sortear').addEventListener('click', async () => {
     }
     $('btn-start-extra')?.addEventListener('click', () => {
         const na = $('manual-team-a').value; const nb = $('manual-team-b').value;
-        if(!na || !nb || na===nb) return alert('Selecione dois times diferentes.');
+        if(!na || !nb || na===nb) return showToast('Selecione dois times diferentes.', 'error');
         const ta = STATE.teams.find(t=>t.name===na);
         const tb = STATE.teams.find(t=>t.name===nb);
         $('team-a-name').textContent = ta.name; $('team-a-name').style.color = ta.hex;
@@ -912,7 +1218,7 @@ $('btn-sortear').addEventListener('click', async () => {
         if (!player) return;
         const exclude = STATE.currentMatchTeams || [];
         const candidate = suggestCandidate(player, exclude);
-        if (!candidate) return alert('Nenhum substituto adequado encontrado.');
+        if (!candidate) return showToast('Nenhum substituto adequado encontrado.', 'info');
         const candTeam = getTeamByPlayer(candidate.name);
         const msg = `Substituir ${player.name} por ${candidate.name} (Sexo: ${candidate.gender}, Hab: ${candidate.skill})?`;
         if (!confirm(msg)) return;

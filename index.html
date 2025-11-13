@@ -17,6 +17,7 @@
             <button class="tab-link" data-tab="partidas">⚔️ Jogos</button>
             <button class="tab-link" data-tab="placar">🔢 Placar</button>
             <button class="tab-link" data-tab="resultados">📊 Resultados</button>
+            <button class="tab-link" data-tab="historico" id="btn-open-history">🕘 Histórico</button>
         </nav>
 
         <main class="tab-content-container glass">
@@ -63,6 +64,10 @@
             <section id="config" class="tab-content active">
                 <h2>⚙️ Início</h2>
                 <p style="opacity:.8;">Escolha uma opção para acessar rapidamente outras telas do sistema.</p>
+                <div class="glass" style="padding:10px 12px; margin:10px 0; display:flex; align-items:center; gap:10px;">
+                    <span style="opacity:.9;">📊 Referência rápida: Histórico de Jogos do Dia</span>
+                    <button class="icon-btn" data-tab-target="historico" style="margin:0;">Ver Histórico</button>
+                </div>
                 <div class="home-grid" style="margin-top: 10px;">
                     <button class="home-card" data-tab-target="cadastro">📝 Cadastro</button>
                     <button class="home-card" data-tab-target="jogadores">📚 Jogadores</button>
@@ -76,15 +81,13 @@
 
             <section id="jogadores" class="tab-content">
                 <h2>📚 Lista de Jogadores</h2>
-                <div style="display:flex; gap:10px; flex-wrap: wrap; margin-bottom: 10px; align-items:center;">
+                <div style="display:flex; gap:10px; flex-wrap: wrap; margin-bottom: 12px; align-items:center;">
                     <input id="player-search" type="text" placeholder="Buscar por nome..." style="flex:1; min-width:200px;">
+                    <label style="display:flex; align-items:center; gap:6px; white-space:nowrap;">
+                        <input type="checkbox" id="toggle-ativos" /> Mostrar apenas ativos
+                    </label>
                     <button id="btn-sortear" class="btn-green" style="font-size: 1.0em;">🎲 Sortear Times Balanceados</button>
                     <button id="btn-clear-presentes" class="btn-red">🗑️ Limpar Seleção</button>
-                </div>
-                <div style="display:flex; gap:10px; flex-wrap: wrap; margin-bottom: 12px; align-items:center;">
-                    <label style="display:flex; align-items:center; gap:6px;">
-                        <input type="checkbox" id="toggle-inativos" /> Mostrar apenas inativos
-                    </label>
                 </div>
                 <div id="players-list" class="players-list"></div>
             </section>
@@ -92,7 +95,10 @@
             <section id="times" class="tab-content">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
                     <h2 style="margin:0; border:none;">👥 Times Definidos</h2>
-                    <button id="btn-copy-teams" class="btn-green" style="width: auto; margin: 0; padding: 8px 20px;">Copiar Lista</button>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <button id="btn-copy-teams" class="btn-green" style="width: auto; margin: 0; padding: 8px 20px;">Copiar Lista</button>
+                        <button class="icon-btn" data-tab-target="partidas" style="margin:0;">➡️ Ir para Ordem de Jogos</button>
+                    </div>
                 </div>
                 <div id="teams-output"></div>
             </section>
@@ -100,7 +106,10 @@
             <section id="partidas" class="tab-content">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
                     <h2 style="margin:0; border:none;">⚔️ Ordem dos Jogos</h2>
-                    <button id="btn-copy-matches" class="btn-green" style="width: auto; margin: 0; padding: 8px 20px;">Copiar Jogos</button>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <button id="btn-copy-matches" class="btn-green" style="width: auto; margin: 0; padding: 8px 20px;">Copiar Jogos</button>
+                        <button class="icon-btn" data-tab-target="placar" style="margin:0;">➡️ Ir para Placar</button>
+                    </div>
                 </div>
                 <div style="background: rgba(33, 150, 243, 0.15); padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid rgba(33, 150, 243, 0.3);">
                     ℹ️ <strong>Regra de Pausa:</strong> Times não devem jogar mais de 2 partidas seguidas sem descanso.
@@ -156,7 +165,33 @@
 
             <section id="resultados" class="tab-content">
                 <h2>📊 Histórico do Dia</h2>
-                <textarea id="results-log" rows="15" readonly style="font-family: monospace; white-space: pre;"></textarea>
+                <div class="results-controls" style="display:flex; gap:8px; flex-wrap:nowrap; align-items:center; margin-bottom:10px;">
+                    <input type="date" id="filter-date" style="margin-top:0; min-width:120px; width:120px;">
+                    <select id="filter-page-size" style="margin-top:0; min-width:120px; width:140px;">
+                        <option value="10">10 por página</option>
+                        <option value="20">20 por página</option>
+                        <option value="50">50 por página</option>
+                    </select>
+                    <button id="btn-apply-filters" class="btn-green" style="margin-top:0;">🔎 Pesquisar</button>
+                    <button id="btn-sync-db" class="btn-green" style="margin-top:0;">🔄 Sincronizar</button>
+                </div>
+                <table id="results-table" class="results-table">
+                    <thead>
+                        <tr>
+                            <th>Hora</th>
+                            <th>Time A</th>
+                            <th>Placar</th>
+                            <th>Time B</th>
+                            <th>Vencedor</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div id="results-pagination" class="results-pagination" style="display:flex; gap:8px; align-items:center; justify-content:flex-end; margin-top:10px;">
+                    <button id="page-prev" style="margin:0;">◀️ Anterior</button>
+                    <span id="page-info" style="opacity:.8;">Página 1</span>
+                    <button id="page-next" style="margin:0;">Próxima ▶️</button>
+                </div>
                 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 20px;">
                     <button id="btn-copy-results" class="btn-green" style="margin:0">📋 Copiar</button>
@@ -165,10 +200,41 @@
                 </div>
             </section>
 
+            <section id="historico" class="tab-content">
+                <h2>🕘 Histórico Geral</h2>
+                <p style="opacity:.8;">Exibe apenas partidas de dias anteriores.</p>
+                <div class="results-controls" style="display:flex; gap:8px; flex-wrap:nowrap; align-items:center; margin-bottom:10px;">
+                    <select id="history-page-size" style="margin-top:0; min-width:120px; width:140px;">
+                        <option value="10">10 por página</option>
+                        <option value="20">20 por página</option>
+                        <option value="50">50 por página</option>
+                    </select>
+                </div>
+                <table id="history-table" class="results-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Hora</th>
+                            <th>Time A</th>
+                            <th>Placar</th>
+                            <th>Time B</th>
+                            <th>Vencedor</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div id="history-pagination" class="results-pagination" style="display:flex; gap:8px; align-items:center; justify-content:flex-end; margin-top:10px;">
+                    <button id="history-page-prev" style="margin:0;">◀️ Anterior</button>
+                    <span id="history-page-info" style="opacity:.8;">Página 1</span>
+                    <button id="history-page-next" style="margin:0;">Próxima ▶️</button>
+                </div>
+            </section>
+
         </main>
     </div>
 
     <textarea id="clipboard-helper" class="copy-area"></textarea>
+    <div id="toast-container" class="toast-container"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Configuração Supabase em arquivo separado (preencha supabase.config.js) -->
     <script src="supabase.config.js"></script>
