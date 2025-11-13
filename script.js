@@ -755,9 +755,11 @@ $('btn-sortear').addEventListener('click', async () => {
         if (!STATE.matchActive) return;
         STATE.score[e.target.dataset.team]++;
         updateScore();
-        if (STATE.score.a >= CONFIG.WIN_SCORE || STATE.score.b >= CONFIG.WIN_SCORE) {
+        const reached = (STATE.score.a >= CONFIG.WIN_SCORE || STATE.score.b >= CONFIG.WIN_SCORE);
+        const lead = Math.abs(STATE.score.a - STATE.score.b);
+        if (reached && lead >= 2) {
             setMatchState('finished');
-            showToast('Fim de jogo! Clique em "Finalizar".', 'info', 3500);
+            showToast('Fim de jogo! 25+ pontos e diferença >= 2. Clique em "Finalizar".', 'info', 3500);
         }
     }));
     $$('.btn-score-minus').forEach(btn => btn.addEventListener('click', e => {
