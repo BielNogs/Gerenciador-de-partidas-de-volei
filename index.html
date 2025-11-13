@@ -4,166 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciador de Vôlei</title>
-    
-    <style>
-        :root {
-            --bg-color: #12121e;
-            --text-color: #e0e0e0;
-            --primary: #007bff;
-            --primary-hover: #0056b3;
-            --glass-bg: rgba(255, 255, 255, 0.08);
-            --glass-border: rgba(255, 255, 255, 0.15);
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            line-height: 1.6;
-            min-height: 100vh;
-            padding: 20px;
-            overflow-x: hidden; /* Evita rolagem lateral indesejada */
-        }
-        /* Blobs de fundo */
-        body::before, body::after {
-            content: ''; position: fixed; z-index: -1; border-radius: 50%; filter: blur(100px); opacity: 0.15;
-        }
-        body::before { background: #9f55ff; width: 300px; height: 300px; top: -50px; left: -50px; }
-        body::after { background: #008cff; width: 400px; height: 400px; bottom: -100px; right: -100px; }
-
-        /* Layout Principal */
-        .app-container { max-width: 900px; margin: 0 auto; }
-        .glass {
-            background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border); border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-        .tab-content-container { padding: 25px; margin-top: 20px; }
-
-        /* --- NAVEGAÇÃO (AJUSTADA) --- */
-        .tabs {
-            display: flex; /* Padrão: lado a lado */
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .tab-link {
-            flex: 1; /* Ocupam espaço igual */
-            padding: 14px 10px;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            color: #fff;
-            font-weight: 600;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            white-space: nowrap; /* Evita que o texto quebre em telas médias */
-        }
-        .tab-link.active {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.4);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-        .tab-content { display: none; animation: fadeIn 0.3s ease; }
-        .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Componentes Gerais */
-        h2 { margin-bottom: 20px; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
-        textarea, select, input {
-            width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px;
-            border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: #fff; font-size: 16px;
-        }
-        textarea:focus, select:focus, input:focus { outline: none; border-color: var(--primary); }
-        
-        button {
-            width: 100%; padding: 14px; margin-top: 15px; border: none; border-radius: 10px;
-            background: var(--primary); color: #fff; font-weight: bold; font-size: 16px;
-            cursor: pointer; transition: transform 0.2s, background 0.2s;
-        }
-        button:hover { background: var(--primary-hover); transform: translateY(-2px); }
-        button:active { transform: translateY(0); }
-        button:disabled { background: #555; cursor: not-allowed; transform: none; opacity: 0.7; }
-        .btn-green { background: #2e7d32; } .btn-green:hover { background: #1b5e20; }
-        .btn-red { background: #c62828; } .btn-red:hover { background: #b71c1c; }
-
-        /* Grid de Gêneros (Configuração) */
-        .gender-grid { display: flex; gap: 20px; }
-        .gender-col { flex: 1; }
-        .gender-col h3 { margin-bottom: 10px; }
-
-        /* Cards de Times */
-        #teams-output { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-        .team-card {
-            padding: 20px; background: rgba(0,0,0,0.2); border-radius: 14px;
-            border: 2px solid var(--team-c); box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-        }
-        .team-card h3 { color: var(--team-c); margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; }
-        .team-card ul { list-style: none; }
-        .team-card li {
-            display: flex; justify-content: space-between; padding: 6px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        .tag { padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
-        .tag-m { background: rgba(33, 150, 243, 0.2); color: #90CAF9; }
-        .tag-f { background: rgba(233, 30, 99, 0.2); color: #F48FB1; }
-        .team-info {
-            margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.05);
-            border-radius: 8px; font-size: 0.9em; color: #ffd54f;
-        }
-
-        /* Placar */
-        .scoreboard {
-            display: flex; align-items: center; justify-content: center; gap: 20px;
-            margin: 30px 0; padding: 20px; background: rgba(0,0,0,0.3); border-radius: 20px;
-        }
-        .score-team { text-align: center; flex: 1; }
-        .score-val { font-size: 5em; font-weight: 800; margin: 15px 0; }
-        .btn-score { width: 70px; height: 70px; border-radius: 50%; font-size: 2.5em; margin: 0 auto; padding: 0; display: flex; align-items: center; justify-content: center; }
-
-        /* Listas e Utilitários */
-        #match-list { list-style: none; max-height: 400px; overflow-y: auto; }
-        #match-list li { padding: 12px; margin-bottom: 8px; background: rgba(255,255,255,0.05); border-radius: 8px; border-left: 4px solid var(--primary); }
-        .copy-area { height: 1px; opacity: 0; position: absolute; }
-
-        /* ================= RESPONSIVIDADE ================= */
-        @media (max-width: 768px) {
-            body { padding: 10px; }
-            .app-container { margin: 10px auto; }
-            .tab-content-container { padding: 20px 15px; }
-            
-            /* --- NAVEGAÇÃO MÓVEL (GRID 2 COLUNAS) --- */
-            .tabs {
-                display: grid;
-                grid-template-columns: 1fr 1fr; /* Força 2 colunas exatas */
-                gap: 8px;
-            }
-            .tab-link {
-                white-space: normal; /* Permite quebrar texto se necessário em telas muito pequenas */
-                font-size: 0.9em;
-                padding: 10px 5px;
-            }
-            /* Faz o último botão (Resultados) ocupar a linha toda para ficar bonito */
-            .tab-link:last-child:nth-child(odd) {
-                grid-column: 1 / -1;
-            }
-
-            .gender-grid { flex-direction: column; gap: 15px; }
-        }
-
-        @media (max-width: 480px) {
-            body { padding: 0; font-size: 14px; }
-            .app-container { margin: 0; border-radius: 0; }
-            .glass { border-radius: 0; border: none; }
-            .score-val { font-size: 3.5em; }
-            .btn-score { width: 55px; height: 55px; font-size: 2em; }
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
     <div class="app-container">
         <nav class="tabs">
             <button class="tab-link active" data-tab="config">⚙️ Início</button>
+            <button class="tab-link" data-tab="cadastro">📝 Cadastro</button>
+            <button class="tab-link" data-tab="jogadores">📚 Jogadores</button>
             <button class="tab-link" data-tab="times">👥 Times</button>
             <button class="tab-link" data-tab="partidas">⚔️ Jogos</button>
             <button class="tab-link" data-tab="placar">🔢 Placar</button>
@@ -171,20 +20,73 @@
         </nav>
 
         <main class="tab-content-container glass">
-            
-            <section id="config" class="tab-content active">
-                <h2>📋 Lista de Jogadores</h2>
-                <div class="gender-grid">
-                    <div class="gender-col">
-                        <h3 style="color: #90CAF9;">🚹 Masculino</h3>
-                        <textarea id="men-input" rows="12" placeholder="Cole a lista de homens aqui..."></textarea>
-                    </div>
-                    <div class="gender-col">
-                        <h3 style="color: #F48FB1;">🚺 Feminino</h3>
-                        <textarea id="women-input" rows="12" placeholder="Cole a lista de mulheres aqui..."></textarea>
-                    </div>
+
+            <section id="cadastro" class="tab-content">
+                <h2>📝 Cadastro de Jogadores</h2>
+                <p>Informe os dados do jogador. Habilidade vai de 1 (iniciante) a 5 (avançado).</p>
+                <div class="form-grid">
+                    <label>
+                        Nome
+                        <input type="text" id="player-name" placeholder="Ex.: Maria Silva" />
+                    </label>
+                    <label>
+                        Sexo
+                        <div class="radio-group">
+                            <label><input type="radio" name="player-gender" value="M" /> Masculino</label>
+                            <label><input type="radio" name="player-gender" value="F" /> Feminino</label>
+                        </div>
+                    </label>
+                    <label>
+                        Habilidade (1-5)
+                        <select id="player-skill">
+                            <option value="1">1 - Iniciante (aprendendo regras básicas)</option>
+                            <option value="2">2 - Básico (recebe/levanta com constância)</option>
+                            <option value="3">3 - Intermediário (bom posicionamento e passes)</option>
+                            <option value="4">4 - Avançado (ataque/bloqueio eficientes)</option>
+                            <option value="5">5 - Competitivo (alto desempenho constante)</option>
+                        </select>
+                    </label>
+                    <label>
+                        Status
+                        <div class="radio-group">
+                            <label><input type="checkbox" id="player-active" checked /> Ativo</label>
+                        </div>
+                    </label>
                 </div>
-                <button id="btn-sortear" style="font-size: 1.2em;">🎲 Sortear Times Balanceados</button>
+                <div style="display:flex; gap:10px; flex-wrap: wrap; margin-top: 10px;">
+                    <button id="btn-add-player" class="btn-green">➕ Adicionar</button>
+                </div>
+                <small style="display:block; margin-top:8px; opacity:.8">Dica: os jogadores são salvos automaticamente no banco local do navegador e podem sincronizar com o Supabase quando conectado.</small>
+            </section>
+
+
+            <section id="config" class="tab-content active">
+                <h2>⚙️ Início</h2>
+                <p style="opacity:.8;">Escolha uma opção para acessar rapidamente outras telas do sistema.</p>
+                <div class="home-grid" style="margin-top: 10px;">
+                    <button class="home-card" data-tab-target="cadastro">📝 Cadastro</button>
+                    <button class="home-card" data-tab-target="jogadores">📚 Jogadores</button>
+                    <button class="home-card" data-tab-target="times">👥 Times</button>
+                    <button class="home-card" data-tab-target="partidas">⚔️ Jogos</button>
+                    <button class="home-card" data-tab-target="placar">🔢 Placar</button>
+                    <button class="home-card" data-tab-target="resultados">📊 Resultados</button>
+                </div>
+                <!-- Conexão com base de dados removida do formulário. Status abaixo no rodapé. -->
+            </section>
+
+            <section id="jogadores" class="tab-content">
+                <h2>📚 Lista de Jogadores</h2>
+                <div style="display:flex; gap:10px; flex-wrap: wrap; margin-bottom: 10px; align-items:center;">
+                    <input id="player-search" type="text" placeholder="Buscar por nome..." style="flex:1; min-width:200px;">
+                    <button id="btn-sortear" class="btn-green" style="font-size: 1.0em;">🎲 Sortear Times Balanceados</button>
+                    <button id="btn-clear-presentes" class="btn-red">🗑️ Limpar Seleção</button>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap: wrap; margin-bottom: 12px; align-items:center;">
+                    <label style="display:flex; align-items:center; gap:6px;">
+                        <input type="checkbox" id="toggle-inativos" /> Mostrar apenas inativos
+                    </label>
+                </div>
+                <div id="players-list" class="players-list"></div>
             </section>
 
             <section id="times" class="tab-content">
@@ -215,19 +117,34 @@
                         </select>
                         <button id="btn-start-match" style="margin-top: 0; flex: 1; min-width: 120px;">▶️ INICIAR</button>
                     </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px;">
+                        <select id="manual-team-a" style="margin-top: 0; flex: 1; min-width: 150px;">
+                            <option value="">Time A (extra)</option>
+                        </select>
+                        <select id="manual-team-b" style="margin-top: 0; flex: 1; min-width: 150px;">
+                            <option value="">Time B (extra)</option>
+                        </select>
+                        <button id="btn-start-extra" class="btn-green" style="margin-top: 0; flex: 1; min-width: 120px;">🎲 Jogo Extra</button>
+                    </div>
                 </div>
 
                 <div class="scoreboard">
                     <div class="score-team">
                         <h3 id="team-a-name" style="min-height: 2.4em; display: flex; align-items: center; justify-content: center;">Time A</h3>
                         <div class="score-val" id="score-a">0</div>
-                        <button class="btn-score" data-team="a" disabled>+</button>
+                        <div class="score-controls">
+                            <button class="btn-score-minus" data-team="a" disabled>-</button>
+                            <button class="btn-score" data-team="a" disabled>+</button>
+                        </div>
                     </div>
                     <div style="font-size: 2em; opacity: 0.5;">X</div>
                     <div class="score-team">
                         <h3 id="team-b-name" style="min-height: 2.4em; display: flex; align-items: center; justify-content: center;">Time B</h3>
                         <div class="score-val" id="score-b">0</div>
-                        <button class="btn-score" data-team="b" disabled>+</button>
+                        <div class="score-controls">
+                            <button class="btn-score-minus" data-team="b" disabled>-</button>
+                            <button class="btn-score" data-team="b" disabled>+</button>
+                        </div>
                     </div>
                 </div>
 
@@ -253,268 +170,11 @@
 
     <textarea id="clipboard-helper" class="copy-area"></textarea>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const CONFIG = {
-                TEAM_SIZE: 6,
-                MIN_PLAYERS: 13,
-                WIN_SCORE: 25,
-                STORAGE_KEY: 'volei_v3_data',
-                COLORS: [
-                    { n: "Laranja", c: "#FF7043" }, { n: "Verde", c: "#66BB6A" },
-                    { n: "Azul", c: "#42A5F5" },    { n: "Rosa", c: "#EC407A" },
-                    { n: "Roxo", c: "#AB47BC" },    { n: "Amarelo", c: "#FFEE58" },
-                    { n: "Ciano", c: "#26C6DA" }
-                ]
-            };
-
-            let STATE = {
-                teams: [], 
-                matches: [],
-                results: [],
-                score: { a: 0, b: 0 },
-                matchActive: false
-            };
-
-            // --- Referências ---
-            const $ = (id) => document.getElementById(id);
-            const $$ = (sel) => document.querySelectorAll(sel);
-            const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
-
-            // --- Navegação ---
-            $$('.tab-link').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    $$('.tab-link').forEach(t => t.classList.remove('active'));
-                    $$('.tab-content').forEach(c => c.classList.remove('active'));
-                    btn.classList.add('active');
-                    $(btn.dataset.tab).classList.add('active');
-                });
-            });
-
-            // =========================================
-            // CORE: SORTEIO BALANCEADO
-            // =========================================
-            $('btn-sortear').addEventListener('click', () => {
-                let men = $('men-input').value.split('\n').map(n=>n.trim()).filter(n=>n).map(n=>({name:n, gender:'M'}));
-                let women = $('women-input').value.split('\n').map(n=>n.trim()).filter(n=>n).map(n=>({name:n, gender:'F'}));
-
-                if (men.length + women.length < CONFIG.MIN_PLAYERS) {
-                    return alert(`Mínimo de ${CONFIG.MIN_PLAYERS} jogadores necessários.`);
-                }
-
-                shuffle(men); shuffle(women);
-                STATE.teams = [];
-                let teamId = 1;
-                const numFullTeams = Math.floor((men.length + women.length) / CONFIG.TEAM_SIZE);
-
-                // Cria times completos
-                for (let i=0; i < numFullTeams; i++) {
-                    let team = [];
-                    const currentTotal = men.length + women.length;
-                    // Calcula proporção ideal baseada no que sobrou
-                    let mCount = Math.round(CONFIG.TEAM_SIZE * (men.length / currentTotal));
-                    let wCount = CONFIG.TEAM_SIZE - mCount;
-
-                    // Garante que não tenta pegar mais do que existe
-                    if (mCount > men.length) { mCount = men.length; wCount = CONFIG.TEAM_SIZE - mCount; }
-                    if (wCount > women.length) { wCount = women.length; mCount = CONFIG.TEAM_SIZE - wCount; }
-
-                    for(let k=0; k<mCount; k++) team.push(men.pop());
-                    for(let k=0; k<wCount; k++) team.push(women.pop());
-
-                    STATE.teams.push(createTeam(teamId++, team, 'completo'));
-                }
-
-                // Sobras
-                let leftovers = [...men, ...women];
-                if (leftovers.length > 0) {
-                    const type = leftovers.length >= 3 ? 'revezamento' : 'reserva';
-                    STATE.teams.push(createTeam(teamId++, leftovers, type));
-                }
-
-                updateUI();
-                $$('.tab-link')[1].click(); // Vai para aba Times
-            });
-
-            function createTeam(id, players, type) {
-                const color = CONFIG.COLORS[(id-1) % CONFIG.COLORS.length];
-                return {
-                    name: `Time ${id}`,
-                    color: color.n,
-                    hex: color.c,
-                    type: type,
-                    players: shuffle(players)
-                };
-            }
-
-            // =========================================
-            // UI UPDATE
-            // =========================================
-            function updateUI() {
-                // Renderiza Times
-                const out = $('teams-output');
-                out.innerHTML = '';
-                STATE.teams.forEach(t => {
-                    let note = t.type === 'completo' ? 'Cede jogadores na pausa' :
-                               t.type === 'revezamento' ? `Recebe ${CONFIG.TEAM_SIZE - t.players.length} jogador(es)` :
-                               'Aguardam próxima rodada';
-                    
-                    out.innerHTML += `
-                    <div class="team-card" style="--team-c: ${t.hex}">
-                        <h3>${t.name} (${t.color})</h3>
-                        <ul>
-                            ${t.players.map(p => `
-                                <li>
-                                    <span>${p.name}</span>
-                                    <span class="tag tag-${p.gender.toLowerCase()}">${p.gender}</span>
-                                </li>
-                            `).join('')}
-                        </ul>
-                        <div class="team-info">${note}</div>
-                    </div>`;
-                });
-
-                // Gera Partidas
-                STATE.matches = [];
-                const playTeams = STATE.teams.filter(t => t.type !== 'reserva');
-                const list = $('match-list');
-                const sel = $('match-selector');
-                list.innerHTML = '';
-                sel.innerHTML = '<option value="">-- Selecione --</option>';
-
-                for(let i=0; i<playTeams.length; i++) {
-                    for(let j=i+1; j<playTeams.length; j++) {
-                        const tA = playTeams[i];
-                        const tB = playTeams[j];
-                        STATE.matches.push([tA.name, tB.name]);
-                        list.innerHTML += `<li style="border-color:${tA.hex}">
-                            <span style="color:${tA.hex}">${tA.name}</span> vs 
-                            <span style="color:${tB.hex}">${tB.name}</span>
-                        </li>`;
-                        sel.innerHTML += `<option value="${tA.name}|${tB.name}">${tA.name} vs ${tB.name}</option>`;
-                    }
-                }
-            }
-
-            // =========================================
-            // PLACAR
-            // =========================================
-            $('btn-start-match').addEventListener('click', () => {
-                const val = $('match-selector').value;
-                if(!val) return alert('Selecione uma partida!');
-                const [na, nb] = val.split('|');
-                const ta = STATE.teams.find(t=>t.name===na);
-                const tb = STATE.teams.find(t=>t.name===nb);
-
-                $('team-a-name').textContent = ta.name; $('team-a-name').style.color = ta.hex;
-                $('team-b-name').textContent = tb.name; $('team-b-name').style.color = tb.hex;
-                
-                STATE.score = {a:0, b:0};
-                updateScore();
-                setMatchState('playing');
-                if (!$('placar').classList.contains('active')) $$('.tab-link')[3].click();
-            });
-
-            $$('.btn-score').forEach(btn => btn.addEventListener('click', e => {
-                if (!STATE.matchActive) return;
-                STATE.score[e.target.dataset.team]++;
-                updateScore();
-                if (STATE.score.a >= CONFIG.WIN_SCORE || STATE.score.b >= CONFIG.WIN_SCORE) {
-                    setMatchState('finished');
-                    alert('Fim de jogo! Clique em Finalizar.');
-                }
-            }));
-
-            $('btn-finish-match').addEventListener('click', () => {
-                if (STATE.score.a === 0 && STATE.score.b === 0) return alert('Placar zerado!');
-                const res = `[${new Date().toLocaleTimeString()}] ${$('team-a-name').textContent} (${STATE.score.a}) x (${STATE.score.b}) ${$('team-b-name').textContent}`;
-                STATE.results.unshift(res);
-                saveData();
-                
-                alert('Salvo!');
-                setMatchState('idle');
-                $('match-selector').querySelector(`option[value="${$('match-selector').value}"]`)?.remove();
-                $('match-selector').value = "";
-                $('team-a-name').textContent = 'Time A'; $('team-a-name').style.color = '#fff';
-                $('team-b-name').textContent = 'Time B'; $('team-b-name').style.color = '#fff';
-                STATE.score = {a:0, b:0};
-                updateScore();
-            });
-
-            $('btn-reset-score').addEventListener('click', () => {
-                if(confirm('Zerar placar?')) {
-                    STATE.score = {a:0, b:0}; updateScore();
-                    if($('team-a-name').textContent !== 'Time A') setMatchState('playing');
-                }
-            });
-
-            function setMatchState(st) {
-                STATE.matchActive = (st === 'playing');
-                $$('.btn-score').forEach(b => b.disabled = (st !== 'playing'));
-                $('btn-finish-match').disabled = (st === 'idle');
-            }
-            function updateScore() {
-                $('score-a').textContent = STATE.score.a;
-                $('score-b').textContent = STATE.score.b;
-            }
-
-            // =========================================
-            // UTILITÁRIOS
-            // =========================================
-            function saveData() {
-                localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(STATE.results));
-                $('results-log').value = STATE.results.join('\n') || '--- Histórico vazio ---';
-            }
-            function loadData() {
-                const d = localStorage.getItem(CONFIG.STORAGE_KEY);
-                if(d) STATE.results = JSON.parse(d);
-                saveData();
-            }
-            loadData();
-
-            async function copyText(text) {
-                try { await navigator.clipboard.writeText(text); alert('Copiado!'); }
-                catch (e) { 
-                    $('clipboard-helper').value = text; $('clipboard-helper').select();
-                    document.execCommand('copy'); alert('Copiado (modo manual)!');
-                }
-            }
-
-            $('btn-copy-teams').onclick = () => copyText(STATE.teams.map(t => `[${t.name}]\n${t.players.map(p=>p.name).join(', ')}`).join('\n\n') || 'Nada para copiar.');
-            $('btn-copy-matches').onclick = () => copyText(STATE.matches.map((m,i)=>`${i+1}. ${m[0]} x ${m[1]}`).join('\n') || 'Nada para copiar.');
-            $('btn-copy-results').onclick = () => copyText($('results-log').value);
-            $('btn-clear-results').onclick = () => { if(confirm('Apagar tudo?')) { STATE.results=[]; saveData(); }};
-
-            $('btn-download-pdf').onclick = () => {
-                if (!window.jspdf || (!STATE.teams.length && !STATE.results.length)) return alert('Nada para gerar PDF.');
-                const doc = new window.jspdf.jsPDF();
-                let y = 20;
-                const checkY = (h=10) => { if(y+h>280) { doc.addPage(); y=20; }};
-                
-                doc.setFontSize(18); doc.text('Resumo do Vôlei', 10, y); y+=10;
-                doc.setFontSize(10); doc.setTextColor(100); doc.text(new Date().toLocaleString(), 10, y); y+=15;
-                
-                doc.setTextColor(0); doc.setFontSize(14); doc.text('Times:', 10, y); y+=8;
-                doc.setFontSize(11);
-                STATE.teams.forEach(t => {
-                    checkY(20);
-                    doc.setTextColor(t.hex); doc.text(`• ${t.name} (${t.color})`, 10, y); y+=6;
-                    doc.setTextColor(60);
-                    const pList = t.players.map(p => `${p.name} (${p.gender})`).join(', ');
-                    const lines = doc.splitTextToSize(pList, 180);
-                    doc.text(lines, 15, y); y += (lines.length*5)+4;
-                });
-
-                checkY(30); y+=10;
-                doc.setTextColor(0); doc.setFontSize(14); doc.text('Resultados:', 10, y); y+=8;
-                doc.setFontSize(10);
-                if(STATE.results.length) STATE.results.forEach(r => { checkY(6); doc.text(r, 10, y); y+=6; });
-                else { doc.setTextColor(150); doc.text('(Sem resultados)', 10, y); }
-
-                doc.save(`Volei_${new Date().toISOString().split('T')[0]}.pdf`);
-            };
-        });
-    </script>
+    <!-- Configuração Supabase em arquivo separado (preencha supabase.config.js) -->
+    <script src="supabase.config.js"></script>
+    <script src="script.js"></script>
+    <footer class="app-footer" style="margin-top:20px; text-align:center; opacity:.8;">
+        <span id="db-status-footer">BD: offline</span>
+    </footer>
 </body>
 </html>
